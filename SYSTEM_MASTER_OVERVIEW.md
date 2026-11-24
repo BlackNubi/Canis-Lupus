@@ -2,7 +2,7 @@
 
 > **Purpose:** authoritative onboarding, architecture, and operating reference for this repository.
 >
-> **Audit date:** 2026-11-23<br>
+> **Audit date:** 2026-11-24<br>
 > **Audit scope:** every file in the current project workspace, source-level behavior, and the connected Vercel project/deployment metadata available during this audit.<br>
 > **Evidence rule:** source code and deployment metadata describe current behavior; earlier product requests describe intent. This document labels the difference.
 
@@ -39,7 +39,7 @@ The product direction is one connected workforce workspace with a distinct perso
 
 - Four static browser experiences: Admin Hub, Employee Hub, Manager Hub, and Staffing Monitor.
 - Client-side navigation and search previews.
-- Employee dashboard clock-in, clock-out, and break interactions that calculate a preview duration in memory.
+- Employee and Admin clock-in, clock-out, and break previews; employee sessions and clock-out records now persist in browser storage.
 - Manager shift creation, editing, assignment, open coverage, employee-overlap checks, and weekly schedule rendering in the browser.
 - Employee schedule confirmation and change-request interactions.
 - A staffing monitor with schedule counts, facility coverage summaries, search, and filters.
@@ -48,7 +48,7 @@ The product direction is one connected workforce workspace with a distinct perso
 
 ### High-level operation
 
-Vercel serves static HTML and JavaScript to the visitor’s browser. Each hub renders its own page. The Admin Hub and most Employee Hub interactions change only in-memory state. Staffing pages call the shared `StaffingData` utility, which saves a JSON array in the current browser’s `localStorage`. There is no application server, database, API layer, identity provider, or external workforce integration in the audited source.
+Vercel serves static HTML and JavaScript to the visitor’s browser. Each hub renders its own page. Admin demo state uses `actriv_admin_preview_v1`; Employee clock sessions, time entries, and requests use employee-scoped or shared browser `localStorage` keys; staffing pages use `actriv_shared_staffing_v1`. Employee time-off and expense requests can appear in Admin review on the same browser/origin, and Admin decisions update local request statuses. There is no application server, database, API layer, identity provider, or external workforce integration, so demo state is not synchronized across users or devices.
 
 ## B. Platform Scope and Boundaries
 
@@ -106,22 +106,22 @@ All Admin modules are rendered by functions in `outputs/company-system-prototype
 
 | Module | Purpose, interactions, inputs, and outputs | Data and dependencies | Status and known gap |
 |---|---|---|---|
-| Dashboard | Company overview. Shows sample operating balance/activity, task counts, recent invoices, an admin clock preview, and attention items. Refresh and navigation controls update the page or show a toast. | Reads sample arrays and in-memory clock state; links to Tasks, Spend, Invoices, and Time. | **PARTIALLY IMPLEMENTED** as a dashboard preview. Figures are illustrative; refresh does not fetch data. |
-| Tasks | Combined task queue with owner, due date, status, and destination module. Add-task form appends a local task; a task can navigate to its configured module. | `state.tasks`; local module navigation. | **PARTIALLY IMPLEMENTED**. No assignment, due-date engine, notifications, filtering workflow, or durable record store. Filter action is a placeholder. |
-| People | Sample employee directory with text/type filters, profile detail dialog, add-person form, and export affordance. | `state.people`; new records remain in memory and profile email is demo data. | **PARTIALLY IMPLEMENTED**. No HRIS, lifecycle processing, org chart, secure fields, or CSV export. |
-| Recruiting | Sample job/candidate pipeline; new candidate form and “move candidate” stage progression. | `state.candidates`; candidate stages are local array values. | **PARTIALLY IMPLEMENTED**. No applicant system, communications, interviews, offers, or durable workflow. Some role form actions do not persist a record. |
-| Payroll | Illustrative payroll preparation progress and pay-run history; opens a sample payroll preview and “mark reviewed” action. | Hard-coded sample amounts, periods, counts, and exceptions; references Time module. | **PARTIALLY IMPLEMENTED** as a preview. Does not calculate payroll, produce pay statements, apply local tax rules, submit a run, or transfer money. |
-| Benefits | Illustrative benefit plans and enrollment statuses, with enrollment/configuration controls. | Hard-coded sample plan data; no benefits service. | **PARTIALLY IMPLEMENTED** as a display. Enrollment settings and plan details are placeholder interactions; no employee coverage or elections are saved. |
-| Time & Attendance | Local admin clock preview, illustrative team coverage, and timesheets awaiting review. | In-memory clock values and hard-coded schedule/timesheet examples. | **PARTIALLY IMPLEMENTED**. No employee time records, policy engine, real timesheet approval, payroll handoff, device verification, or durable clock data. |
-| Time Off | Sample leave requests, policy cards, and office-calendar copy; can show a local request dialog and update a displayed demo decision. | Hard-coded leave rows and labels; no leave balance source. | **PARTIALLY IMPLEMENTED**. Decision is a UI update, not a durable approval; calendar, policy and settings actions are placeholders. |
-| Expenses | Sample employee expense activity, filters, new expense form, policy action, and approve/reject controls. | `state.expenses`; submitted examples append to memory. | **PARTIALLY IMPLEMENTED**. No receipt upload, policy evaluation, reimbursement, accounting integration, or export. Decision changes only in-memory state. |
+| Dashboard | Company overview. Shows sample operating balance/activity, task counts, recent invoices, an admin clock preview, and attention items. Refresh and navigation controls update the page or show a toast. | Reads browser-local demo state; clock state is included in `actriv_admin_preview_v1`; links to Tasks, Spend, Invoices, and Time. | **PARTIALLY IMPLEMENTED** as a dashboard preview. Figures are illustrative; refresh does not fetch data. |
+| Tasks | Combined task queue with owner, due date, status, and destination module. Add-task form appends a preview task; a task can navigate to its configured module. | `state.tasks` in `actriv_admin_preview_v1`; local module navigation. | **PARTIALLY IMPLEMENTED**. Browser-local persistence only; no assignment, due-date engine, notifications, filtering workflow, or server record store. Filter action is a placeholder. |
+| People | Sample employee directory with text/type filters, profile detail dialog, add-person form, and export affordance. | `state.people` in `actriv_admin_preview_v1`; new demo records survive reloads in this browser. | **PARTIALLY IMPLEMENTED**. No HRIS, lifecycle processing, org chart, server-side data protection, or CSV export. |
+| Recruiting | Sample job/candidate pipeline; new candidate form and “move candidate” stage progression. | `state.candidates` in `actriv_admin_preview_v1`; candidate stages persist in this browser. | **PARTIALLY IMPLEMENTED**. No applicant system, communications, interviews, offers, or server workflow. Some role form actions still do not create a record. |
+| Payroll | Illustrative payroll preparation progress and pay-run history; opens a sample payroll preview and “mark reviewed” action. | Hard-coded sample amounts, periods, counts, and exceptions; the review marker is saved in Admin browser state; references Time module. | **PARTIALLY IMPLEMENTED** as a preview. Does not calculate payroll, produce pay statements, apply local tax rules, submit a run, or transfer money. |
+| Benefits | Illustrative plan catalog and enrollment statuses; admins can add a demo plan and open plan details. | `state.benefitPlans` in `actriv_admin_preview_v1`. | **PARTIALLY IMPLEMENTED**. Catalog edits persist in this browser; enrollment settings, employee coverage, eligibility, and elections are not connected. |
+| Time & Attendance | Admin clock, sample timesheets, local employee clock-out entries, and review actions. | Admin state uses `actriv_admin_preview_v1`; Employee Hub clock sessions are keyed by profile, and completed employee entries use `actriv_employee_time_entries_v1`. | **PARTIALLY IMPLEMENTED**. Clock sessions and review status persist in one browser; no authoritative time policy, server approval, payroll handoff, device verification, or cross-device sync. |
+| Time Off | Sample leave requests, employee-submitted preview requests, policy cards, and office-calendar copy; Admin can approve or decline local requests. | Admin requests are in `actriv_admin_preview_v1`; Employee Hub requests use `actriv_employee_requests_v1` and are read from the same browser storage. | **PARTIALLY IMPLEMENTED**. Status changes persist locally and appear in the employee's request list; no leave balance, holiday service, manager notification, or authoritative approval exists. |
+| Expenses | Sample expense activity, Employee Hub submissions, filters, Admin-created preview rows, and approve/reject controls. | Admin records use `state.expenses`; Employee Hub submissions use `actriv_employee_requests_v1`. Both are browser-local. | **PARTIALLY IMPLEMENTED**. Admin decisions update employee preview request status on the same browser; no receipt upload, policy evaluation, reimbursement, accounting integration, or live export. |
 | Invoices | Customer invoice listing, filters, create form, details, and approval/status controls. | `state.invoices`; sample client billing records. | **PARTIALLY IMPLEMENTED**. Status changes are local; no invoicing provider, client delivery, tax validation, payment collection, or money movement. |
 | Vendors & Bills | Supplier list and add-vendor/create-bill forms. | `state.vendors`; vendor and bill forms can append local rows. | **PARTIALLY IMPLEMENTED**. No accounts-payable source, bill matching, approvals, payment, or durable supplier records. Vendor detail is not backed by a connected detail view. |
 | Cards & Travel | Illustrative spend controls, travel requests, and card activity. | Hard-coded sample rows and policy copy. | **PARTIALLY IMPLEMENTED**. Spend policies and travel requests are placeholders; no bank/card connection or transaction control. |
 | Apps & Access | Application catalog, lifecycle-access examples, and access-review presentation; can add a demo app and show an assignment preview. | `state.apps`; role/group options are illustrative. | **PARTIALLY IMPLEMENTED**. No identity provider, provisioning, access revocation, group enforcement, or audit source. Assignment save is preview-only. |
 | Devices | Demo hardware inventory, assignment dialog, security posture, and lifecycle actions. | `state.devices` and sample employee list; assignment changes memory. | **PARTIALLY IMPLEMENTED**. No MDM, inventory connector, device enrollment, wipe, security telemetry, or lifecycle ticket. |
-| Learning | Course catalog, audience, due dates, progress, and add-course form. | `state.courses`; data remains in memory. | **PARTIALLY IMPLEMENTED**. No LMS connection or completion tracking; assignment/report actions are placeholders. |
-| Performance | Illustrative review cycle and team goals, with a new-review affordance. | Hard-coded sample review and goal examples. | **PARTIALLY IMPLEMENTED**. No review workflow, feedback storage, reminders, manager approvals, or goal updates; form does not implement a real review record. |
+| Learning | Course catalog, audience, due dates, progress, add-course form, and a progress-update action. | `state.courses` in `actriv_admin_preview_v1`. | **PARTIALLY IMPLEMENTED**. Catalog and sample progress persist in this browser; no LMS connection, learner assignment, notification, or verified completion tracking. |
+| Performance | Illustrative review cycle and team goals; admins can add a demo goal to the team list. | `state.goals` in `actriv_admin_preview_v1`; review-cycle content remains sample copy. | **PARTIALLY IMPLEMENTED**. Demo goals persist in this browser; no review workflow, feedback storage, reminders, manager approvals, or verified goal updates. |
 | Reports & Analytics | Static workforce/spend charts and report listings, with scheduling/open/export affordances. | Hard-coded chart values and samples. | **PARTIALLY IMPLEMENTED**. No analytic query, report generator, scheduled delivery, or CSV export. |
 | Automations | Sample workflow rules and event history; add rule and toggle enablement in memory. | `state.automations`; no event engine. | **PARTIALLY IMPLEMENTED**. Toggles change display state only; triggers/actions are descriptive text and are never executed. |
 | Policies & Permissions | Sample policy catalog, role matrix, and audit trail. | Hard-coded policy/role examples. | **PARTIALLY IMPLEMENTED**. It documents proposed controls in UI but does not enforce permissions, save policy edits, or emit an audit log. |
@@ -133,13 +133,13 @@ All Admin modules are rendered by functions in `outputs/company-system-prototype
 
 | Module | Purpose, interactions, inputs, and outputs | Data and dependencies | Status and known gap |
 |---|---|---|---|
-| Home | Personal greeting, local date, search, time clock, attention/coming-up/shortcut cards, common actions, useful resources, and office information. | Static copy and profile context; clock uses runtime variables. | **PARTIALLY IMPLEMENTED**. Task, holiday, payroll, notifications, and role-resource data are unavailable; the UI labels those states instead of inventing live records. |
+| Home | Personal greeting, local date, search, time clock, attention/coming-up/shortcut cards, common actions, useful resources, and office information. | Static copy and profile context; clock is saved under `actriv_employee_clock_v1:<profile>` and completed sessions under `actriv_employee_time_entries_v1`. | **PARTIALLY IMPLEMENTED**. Clock/break state survives reloads in this browser; task, holiday, payroll, notifications, and role-resource data remain unavailable. |
 | My Resources | Task/request placeholder, role-relevant app/resource links, saved resource examples, and personal profile summary. | Static content and sample profile. | **PARTIALLY IMPLEMENTED**. No assigned-app, task, document, or profile source. Update/open buttons show explanatory dialogs. |
 | Pay and Benefits | Personal pay/benefit entry point designed to protect sensitive information in homepage previews. | No payroll or benefits data is loaded. | **PLANNED / PARTIALLY IMPLEMENTED**. Links explain a connection is required; no paystub, balance, enrollment, or pay-date information is available. |
-| IT Help | Request-ticket preview and routes to device/app-access help. | Static action labels and local dialog forms. | **PARTIALLY IMPLEMENTED**. Preview submit closes with a toast and sends nothing; no ticket/device/access service. |
+| IT Help | Local support request form and routes to device/app-access help. | Employee requests are saved to `actriv_employee_requests_v1` and shown only for the selected local profile. | **PARTIALLY IMPLEMENTED**. Requests persist in this browser preview; no ticket service, notification, device feed, or app-access workflow exists. |
 | Directory | Profile/directory card and search affordance. Employee context contains only the provided profile and manager context; manager profile is relabeled “My profile.” | Local profile object; no directory API. | **PARTIALLY IMPLEMENTED**. No searchable coworker directory, org chart, skills, email, or Slack link. |
-| Expenses | Personal expense form/list entry point. | Local dialog; no live expenses. | **PARTIALLY IMPLEMENTED**. The form is illustrative and does not save, submit, attach a receipt, or request reimbursement. |
-| Time Off | PTO request dialog and calendar entry point. | Local form; assigned holiday data is unavailable. | **PARTIALLY IMPLEMENTED**. Preview submit sends nothing; no balance, request record, approval, or assigned office-calendar source. |
+| Expenses | Personal expense form and own request-history list. | Employee submissions are saved to `actriv_employee_requests_v1`; Admin can read and update them in the same browser. | **PARTIALLY IMPLEMENTED**. Local status workflow only; no receipt, reimbursement service, or cross-device synchronization. |
+| Time Off | PTO request dialog, assigned-calendar entry point, and own request-history list. | Employee requests are saved to `actriv_employee_requests_v1`; Admin decisions update the status in the same browser. | **PARTIALLY IMPLEMENTED**. No balance, holiday source, notification, or server approval. |
 | Staffing Calendar | Weekly personal calendar and shift-confirmation list. Previous/next week controls; employee can confirm a booked shift or request a correction. | Shared `StaffingData` module and same-origin browser storage. Filters booked rows by the current employee profile name. | **PARTIALLY IMPLEMENTED**. This is the most connected demo workflow, but it is local to a browser, has no authentication/credential checks, and does not send a manager notification. |
 | Company Resources | Handbook, expense/time policies, office guides, and resource search entry points. | Static example destinations and dialog copy. | **PARTIALLY IMPLEMENTED**. No live documents, ownership/last-updated metadata, or permission-aware search. |
 
@@ -222,25 +222,25 @@ Admin Hub and Employee Hub modules are client-rendered within a single HTML page
 
 - Admin module selection uses `data-view` attributes and a `render()` map. The visible content is generated by template-string functions.
 - Global Admin search matches the module key/name list and returns module-navigation buttons. It is not a search over company records and does not apply permissions.
-- Most sample create forms append to arrays in the JavaScript `state` object. Implemented in-memory append cases include employee, candidate, invoice, expense, vendor, bill, app, device, course, automation, and task.
-- Some form types or action buttons open a modal but do not persist meaningful data; unsupported actions use a generic toast or a prototype placeholder.
-- Reloading the Admin Hub recreates the initial sample state. There is no `localStorage` persistence in this page.
-- Approval-like controls mostly change sample presentation. They do not represent legally effective or operational approvals.
+- Supported Admin create forms append to the JavaScript `state` object and save it under `actriv_admin_preview_v1`. Supported preview records include employee, candidate, invoice, expense, vendor, bill, app, device, course, goal, benefit plan, leave request, automation, and task.
+- Some form types or action buttons still do not persist meaningful data; unsupported actions use a generic toast or a prototype placeholder. Admin sample updates persist only in this browser and are not company records.
+- The Admin Hub restores supported state from `actriv_admin_preview_v1` on reload. Values stay in the current browser profile and can be cleared with browser storage.
+- Supported leave, expense, timesheet, and invoice preview actions update local statuses; they do not represent legally effective or operational approvals.
 
 ### F.2 Employee Hub search and page navigation
 
 - The sidebar switches among pre-rendered page sections.
 - Search uses a hard-coded index of pages and example resources; the search UI does not query an API, employee directory, or policy repository.
-- Quick actions open preview dialogs. PTO, expense, and IT forms have browser-side fields but their submit handler closes the dialog and reports that nothing was sent or saved.
+- Quick actions open preview dialogs. PTO, expense, and IT forms save a pending demo request in `actriv_employee_requests_v1` and render the selected employee's request history. Same-browser Admin Time Off and Expenses pages can review the requests; nothing is sent to a manager or external system.
 - Empty or unavailable states intentionally communicate missing connections. Do not replace them with invented balances, requests, payroll dates, or employee data.
 
 ### F.3 Employee clock in, break, and clock out
 
-- Clock in records a JavaScript `Date`, resets break duration, and reveals clock-out/break controls.
-- Take break records a break start. End break adds the elapsed interval to an in-memory duration.
-- Clock out accounts for an active break, calculates elapsed work/break minutes, hides active controls, and returns the interface to the clock-in state.
-- Clock values live only in runtime variables. Reloading clears the active state; there is no time-entry save or payroll handoff.
-- The Admin Hub has a separate preview clock with similar but independent in-memory state. The two clock implementations are not shared.
+- Clock in records a JavaScript `Date`, resets break duration, reveals clock-out/break controls, and saves the active session under a key scoped to the selected employee profile.
+- Take break records a break start. End break adds the elapsed interval to the saved break duration.
+- Clock out accounts for an active break, calculates elapsed work/break minutes, adds a local time-entry row under `actriv_employee_time_entries_v1`, hides active controls, and returns the interface to the clock-in state.
+- Clock state and completed preview entries survive reloads in the same browser. Admin Time & Attendance can review Employee Hub clock entries when it uses the same browser/origin. There is still no server submission, identity check, timekeeping policy, or payroll handoff.
+- The Admin Hub has a separate preview clock. Employee Hub clock entries are visible in Admin Time & Attendance through the shared same-origin `localStorage` key; they are not a secure or server-backed timesheet feed.
 
 ### F.4 Manager shift creation and assignment
 
@@ -306,21 +306,23 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-  A[Click shortcut] --> B[Open example form]
-  B --> C[Enter sample values]
-  C --> D[Submit preview]
-  D --> E[Close dialog and show toast]
-  E --> F[No API request, durable record, or notification]
+  A[Open Time Off, Expenses, or IT Help] --> B[Enter form values]
+  B --> C[Save a pending browser-local request]
+  C --> D[Render request history for this profile]
+  C --> E[Admin review reads same-origin request]
+  E --> F[Decision updates browser-local status]
+  F --> G[Employee sees status in request history]
+  D --> H[No server request or notification]
 ```
 
 ### Admin sample record interaction
 
-Admin selects a module → opens a local modal → browser-required fields are checked → supported form kinds append to the in-memory `state` object → `render()` redraws the current module → a toast confirms a preview-only save. The array resets on reload. Approval and integration actions either update in-memory presentation or show placeholder copy.
+Admin selects a module → opens a local modal → browser-required fields are checked → supported form kinds update `state` → `saveDemoState()` writes `actriv_admin_preview_v1` → `render()` redraws the current module. Browser-local state survives reloads. Unsupported integration actions remain placeholders.
 
 ### Recovery and failure behavior
 
 - Staffing: malformed/unreadable localStorage returns an empty schedule; a write exception returns `false` and the Manager Hub displays a form error. The utility does not repair malformed state or retain a backup.
-- Employee forms: submit is explicitly a preview; values are not retained and there is no retry queue.
+- Employee forms: requests are browser-local. A localStorage write failure keeps the dialog open and shows an error; there is no server retry queue or cross-device synchronization.
 - Admin actions: no centralized error handler or API error model exists; unsupported actions fall through to toasts.
 - Browser/device loss: local staffing data can be cleared with browser storage and cannot be restored from a server.
 
@@ -338,7 +340,11 @@ flowchart TD
   M --> D[staffing-data.js]
   E --> D
   S --> D
-  D --> L[(Browser localStorage<br/>actriv_shared_staffing_v1)]
+  D --> L[(Browser localStorage<br/>staffing schedule)]
+  A --> W[(Browser localStorage<br/>Admin state)]
+  E --> W
+  W --> R[(Employee request and time-entry keys)]
+  A --> R
   M -. same-tab custom event / other-tab storage event .-> E
   M -. same-tab custom event / other-tab storage event .-> S
   E -. same-tab custom event / other-tab storage event .-> S
@@ -351,9 +357,9 @@ The event arrows represent browser UI refreshes. They do not connect different p
 | Layer | Current implementation |
 |---|---|
 | Frontend | Plain HTML, CSS, and vanilla JavaScript. Admin, Employee, Manager, and Monitor templates are mostly self-contained. No React/Vue/Angular or component package is present. |
-| Application logic | Inline functions and event listeners in each HTML page. The Admin Hub uses a page-local state object; Employee Hub uses runtime variables for the clock and profile context; staffing pages call `StaffingData`. |
+| Application logic | Inline functions and event listeners in each HTML page. Admin and Employee pages use browser-local state for selected demo workflows; staffing pages call `StaffingData`. |
 | API/backend | None found in the workspace or current deployment manifest. No request handler, server code, API contract, or service boundary exists. |
-| Persistence | Browser `localStorage` for staffing demo shifts only. Other changes are in-memory or DOM-only. |
+| Persistence | Browser `localStorage` for staffing, supported Admin demo state, employee-specific clock sessions, employee clock-out records, and employee PTO/expense/IT requests. This is same-browser/origin storage, not server persistence. |
 | Database | None. No SQL, Prisma, Supabase, migrations, database client, or policy definitions were found. |
 | Authentication | None in application code. Vercel project protection is a separate hosting setting. |
 | Authorization | None in application code. Role/profile filtering is client-side and non-secure. |
@@ -365,6 +371,9 @@ The event arrows represent browser UI refreshes. They do not connect different p
 ```text
 project root/
 ├── .git/                               # Local Git metadata; main tracks origin/main
+├── AGENTS.md                          # Direct-to-GitHub working preference and repository rules
+├── README.md                           # Platform summary
+├── RIPPLING_BENCHMARK.md              # Public product-category benchmark and gap map
 ├── outputs/
 │   ├── company-system-prototype.html   # Admin Hub and company-wide module previews
 │   ├── employee-hub-prototype.html     # Employee Hub and manager employee-profile context
@@ -375,7 +384,7 @@ project root/
 └── SYSTEM_MASTER_OVERVIEW.md           # This document
 ```
 
-At the source audit, the project root was not a Git repository and `rg --files -uu` found only the five source artifacts. It has since been initialized and connected to `https://github.com/BlackNubi/Canis-Lupus.git`; local `main` tracks `origin/main`, whose existing initial commit contains the repository README. The current `SYSTEM_MASTER_OVERVIEW.md` and `outputs/` files are in a local commit based on that initial history, but the commit has not yet been pushed. No package manifest, AGENTS.md, tests, CI workflow, environment file, API code, database code, or migration was found in the project workspace.
+The live repository is `https://github.com/BlackNubi/Canis-Lupus` on branch `main`. Source artifacts live under `outputs/`; `AGENTS.md` records the user's direct-to-GitHub workflow preference, and `RIPPLING_BENCHMARK.md` records the public product-category comparison. No package manifest, application API, database code, migrations, CI workflow, or production authentication code has been found. The Vercel project is not Git-linked; deployment must be verified separately from GitHub commits.
 
 ## I. Database and Data Model
 
@@ -383,9 +392,17 @@ At the source audit, the project root was not a Git repository and `rg --files -
 
 There is **no database schema** in the project. The structures below describe client-side JavaScript data, not relational tables or durable company records.
 
-### Admin Hub in-memory state
+### Admin Hub browser-local preview state
 
-The `state` object in `outputs/company-system-prototype.html` contains arrays/objects for people, candidates, invoices, expenses, vendors/bills, devices, apps, tasks, clock state, automations, and courses. Other screens use hard-coded arrays and computed presentation values. The record relationships are primarily names and strings; there are no stable IDs/foreign keys for many examples. A page reload reconstructs original sample state.
+The `state` object in `outputs/company-system-prototype.html` is restored from `actriv_admin_preview_v1` and includes people, candidates, invoices, expenses, vendors/bills, devices, apps, tasks, clock state, automations, courses, leave requests, benefit plans, goals, timesheets, completed local clock entries, and a payroll review marker. Many sample records have no stable IDs/foreign keys. Data belongs to one browser profile and has no server-side protection.
+
+### Employee Hub browser-local preview state
+
+| Key | Contents | Scope and limitation |
+|---|---|---|
+| `actriv_employee_clock_v1:<profile>` | Active clock-in time, break start, accrued break duration, latest clock-out summary. | One selected profile name in the current browser; not authenticated identity. |
+| `actriv_employee_time_entries_v1` | Clock-out records with employee display name, start/end timestamps, worked minutes, break minutes, and local review status. | Readable by Admin page on the same origin/browser; not a payroll-grade time source. |
+| `actriv_employee_requests_v1` | PTO, expense, and IT request preview rows with ID, employee display name, form values, submit time, and status. | Employee history filters by profile name; Admin Time Off/Expenses review same-browser rows. No access control, server notification, or cross-device sync. |
 
 ### Staffing browser record
 
@@ -419,8 +436,8 @@ erDiagram
 
 ### Data ownership and lifecycle
 
-- Data is owned by the local browser profile and origin, not by an employee or manager account.
-- The shared staffing schedule is read and replaced as one JSON array. There is no migration/version field, record-level transaction, conflict resolution, audit trail, retention policy, or backup.
+- Staffing state, Admin preview state, and employee preview state are owned by the local browser profile and origin, not by an authenticated employee or manager account.
+- The shared staffing schedule is read and replaced as one JSON array. Admin state and employee requests/time entries are also written as local JSON values. There is no migration/version field, record-level transaction, conflict resolution, audit trail, retention policy, or backup.
 - The sample roster is a hard-coded constant and contains illustrative role/location/credential strings.
 - Staffing date helpers create date strings using local time and format dates at local noon; the week starts Monday. `hoursFor()` sums booked intervals for a matching employee/date and accounts for overnight end times, but no page currently acts as a payroll-grade timesheet source.
 - No central validation rules, encryption-at-rest controls, consent/retention controls, or per-user data policies are implemented.
@@ -515,15 +532,16 @@ Status terms:
 | Capability | Status | Evidence / qualification |
 |---|---|---|
 | Admin Hub navigation and 20 module screens | PARTIALLY IMPLEMENTED | Static HTML/JS pages with sample state; numerous placeholder actions. |
-| Admin sample forms and local interactions | PARTIALLY IMPLEMENTED | Supported forms update page memory only; no reload persistence. |
+| Admin sample forms and supported local interactions | PARTIALLY IMPLEMENTED | `actriv_admin_preview_v1` preserves supported forms/statuses in one browser; unsupported integrations remain placeholders. |
 | Employee Hub navigation, shortcuts, search preview | IMPLEMENTED for navigation preview | Search index is local and static; no content retrieval or permission checks. |
-| Employee clock in/out/break | PARTIALLY IMPLEMENTED | Runtime-only time arithmetic; no stored/submitted timesheet. |
+| Employee clock in/out/break | PARTIALLY IMPLEMENTED | Active session and break persist per profile in browser storage; clock-out writes a local entry. No server timesheet/payroll handoff. |
+| Employee PTO/expense/IT request previews | PARTIALLY IMPLEMENTED | Employee request history persists locally; Admin can review PTO/expense requests from the same browser. No authentication or notifications. |
 | Employee profile-specific manager view | PARTIALLY IMPLEMENTED | Query parameter maps to a hard-coded sample profile; not authenticated. |
 | Manager shift scheduling | PARTIALLY IMPLEMENTED | LocalStorage-based CRUD-like UI with limited validation and no server. |
 | Employee shift confirmation/change request | PARTIALLY IMPLEMENTED | LocalStorage state update only; no notification or approval workflow. |
 | Staffing Monitor metrics/search/filters | IMPLEMENTED for local demo data | Reads same browser-local schedule; not company-wide monitoring. |
 | Cross-user/device staffing synchronization | PLANNED | No backend or shared database present. |
-| Payroll, benefits, HRIS, ITSM, accounting, identity, LMS integrations | PLANNED | Admin/Employee UI contains sample or unavailable states only. |
+| Payroll, benefits elections, HRIS, ITSM, accounting, identity, LMS integrations | PLANNED | Browser previews do not connect to these services or use real employee records. |
 | Authentication and role/data authorization | PLANNED | No application identity or permission enforcement present. |
 | Database, API, migrations, audit log | PLANNED | None found in workspace/deployment manifest. |
 | Production automations and AI | Not implemented | No execution engine, AI provider, prompts, or agent code. |
@@ -533,21 +551,21 @@ Status terms:
 ## P. Known Issues, Risks, and Technical Debt
 
 1. **No trusted identity or permission layer.** Profile query parameters and hidden links do not limit access. Any accessible static route remains reachable by URL.
-2. **No server persistence.** Admin and Employee preview changes reset on reload; staffing changes live only in one browser profile.
+2. **No server persistence.** Selected Admin and Employee preview changes survive reloads only in browser `localStorage`; they are not shared with other users/devices and can be cleared.
 3. **Staffing is not multi-user.** Manager assignments and employee responses will not appear on another user’s device. This conflicts with the intended real staffing workflow.
 4. **Manager-link context inconsistency.** Manager Hub navigation links preserve `profile=manager`, but its primary “Open staffing monitor” button drops it, so the monitor’s Employee Hub link can return to the default profile.
 5. **Sample roster and credentials are not authoritative.** Role eligibility should never drive real provider assignment or clinical coverage.
 6. **Limited overlap checking.** Same-date employee overlaps are checked, but adjacent-day overnight collisions and broader staffing constraints are not.
 7. **Local deletion without history.** Cancel removes a shift; no audit, cancellation status, actor, or recovery mechanism exists.
-8. **Incomplete status persistence.** Some Admin decisions alter only a DOM cell; others alter the in-memory state. Reload behavior is inconsistent across modules.
+8. **Uneven workflow completion.** Core preview state now persists, but many sections remain static and unsupported actions are placeholders. There is no durable server-side audit/status history.
 9. **No consistent form/action contract.** Some generic modal types do not map to a `submitRecord` state update; unsupported actions use placeholder toasts.
 10. **No source-of-truth service.** Dates, totals, facility labels, employee identities, policies, and metrics are not reconciled against a company system.
-11. **XSS hardening is uneven.** Dynamic Admin form values are inserted into HTML without universal escaping.
+11. **XSS hardening is uneven.** New Admin form data and selected request/table values are escaped in the updated paths, but the Admin page still uses many template strings. Complete output encoding before rendering untrusted or live data.
 12. **Monolithic files.** Large inline scripts and CSS make changes harder to isolate and review; no shared design tokens/components exist.
 13. **No tests, CI, or local build manifest.** Reproducible validation and deployment are not established in the workspace.
 14. **Deployment protection differs from product permissions.** Vercel SSO/share configuration does not replace application-level access control and may change independently of source.
 
-These risks are recorded for planning. This documentation task did not modify application behavior or remediate them.
+These risks reflect the current prototype after adding browser-local demo workflows. They do not imply production security or connected company services.
 
 ## Q. Roadmap and Outstanding Work
 
@@ -566,11 +584,13 @@ These requests are recorded in conversation history, not in separate requirement
 
 ### Recommendations inferred from the audit (not user-approved roadmap commitments)
 
+The feature category comparison and its evidence limits are documented in [RIPPLING_BENCHMARK.md](RIPPLING_BENCHMARK.md).
+
 1. **Before real data:** decide identity provider, company/user tenancy, role and record-level permissions, public-share policy, and privacy/audit requirements.
 2. **Establish a server data source:** define employee, facility, shift, booking, response, time-entry, leave, and audit models; add migrations and controlled API/service boundaries.
 3. **Make staffing multi-user and safe:** server-side role/credential eligibility, facility/time-zone policy, conflict checks across midnight, concurrency control, cancellation/change history, notifications, and manager approval workflows.
 4. **Connect source systems deliberately:** HRIS/directory, payroll, benefits, timekeeping, ITSM, identity/app provisioning, expenses/accounting, LMS, calendars, and notification services according to authorized access.
-5. **Complete hub workflows:** persist employee requests, balance/approval status, relevant calendars/pay dates, learning assignments, performance cycles, and finance operations.
+5. **Complete production hub workflows:** move local request, time, staffing, learning, and goal previews to a server-backed data model; add balance/approval history, assigned calendars/pay dates, notifications, and integrations.
 6. **Harden and modularize:** output encoding, server-side validation, CSRF/session protections where applicable, audit logging, shared UI components/design tokens, error handling, and data-retention policy.
 7. **Add repeatable quality gates:** choose a runtime/build workflow, add automated unit/contract/browser tests, CI, accessibility checks, and safe preview/production deployment steps.
 
