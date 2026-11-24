@@ -8,7 +8,7 @@
 
 ## How to use this document
 
-Read Sections A–B for orientation, E–I before changing routes or data behavior, L–N before changing business rules or visibility, and R before any code change. **The static source is the implementation authority.** This document is a map and must be updated when that implementation changes.
+Read Sections A–B for orientation, E–I before changing routes or data behavior, L–N before changing business rules or visibility, and R before any code change. **The Next.js App Router source is the route and framework authority.** The currently mounted compatibility views under `public/prototypes/` remain the behavior authority for the legacy interactions until each is migrated into React. This document is a map and must be updated when that implementation changes.
 
 ## A. Executive Platform Overview
 
@@ -37,14 +37,14 @@ The product direction is one connected workforce workspace with a distinct perso
 
 ### Current capabilities
 
-- Four static browser experiences: Admin Hub, Employee Hub, Manager Hub, and Staffing Monitor.
+- Four same-origin hub experiences (Admin, Employee, Manager, and Staffing Monitor) mounted at Next.js App Router routes. Current interactive screens are same-origin compatibility views of the original static prototypes; they are not yet full React rewrites.
 - Client-side navigation and search previews.
 - Employee and Admin clock-in, clock-out, and break previews; employee sessions and clock-out records now persist in browser storage.
 - Manager shift creation, editing, assignment, open coverage, employee-overlap checks, and weekly schedule rendering in the browser.
 - Employee schedule confirmation and change-request interactions.
 - A staffing monitor with schedule counts, facility coverage summaries, search, and filters.
 - Shared demo staffing state through browser `localStorage` on the same origin.
-- Static Vercel hosting.
+- A Next.js App Router route/build layer intended for Git-connected Vercel deployment; the compatibility views still run their original browser-side JavaScript.
 
 ### High-level operation
 
@@ -159,19 +159,24 @@ All Admin modules are rendered by functions in `outputs/company-system-prototype
 
 ### Route and page map
 
-The links in the source expect these root-relative paths. Vercel’s latest deployment manifest lists static files corresponding to the app pages; Vercel’s project route API returned no rewrite/redirect rules at audit time.
+The Next.js App Router owns the application URLs. Each hub route currently mounts its same-origin compatibility page from `public/prototypes/`; cross-hub links target the top-level route so browser storage remains same-origin and pages do not nest.
 
 ```text
-/                         Admin Hub / Company System dashboard
-├── /admin/                Admin Hub duplicate entry page
-├── /employee/             Employee Hub (default sample employee context)
-│   └── ?profile=manager   Manager's sample Employee Hub context
-├── /manager/              Manager Hub (staffing-focused)
-└── /staffing/             Staffing Monitor
-    └── ?profile=manager   Preserves manager-context Employee Hub link
+app/
+├── page.tsx                / — Admin Hub / Company System
+├── admin/page.tsx          /admin — Admin Hub entry alias
+├── employee/page.tsx       /employee — Employee Hub
+│   └── ?profile=manager    Manager's own sample Employee Hub context
+├── manager/page.tsx        /manager — Manager Hub
+└── staffing/page.tsx       /staffing — Staffing Monitor
+    └── ?profile=manager    Preserves manager-context Employee Hub link
+
+public/
+├── prototypes/*.html       Same-origin compatibility views (temporary migration layer)
+└── staffing-data.js        Shared browser-local staffing utility
 ```
 
-The Vercel deployment manifest reported `src/index.html`, `src/admin/index.html`, `src/employee/index.html`, `src/manager/index.html`, `src/staffing/index.html`, and `src/staffing-data.js`. The deployed UI links use `/`, `/admin/`, `/employee/`, `/manager/`, and `/staffing/`. No local route configuration explains the static file mapping; treat the mapping as deployment behavior to verify if the hosting layout changes.
+The App Router routes are React server components which render a shared `PrototypeFrame`. The frame intentionally does not sandbox its same-origin iframe because legacy screens require their current scripts and shared browser `localStorage`. The original files under `outputs/` remain archival snapshots and are not application routes.
 
 ### Hub navigation hierarchy
 
@@ -332,59 +337,61 @@ Admin selects a module → opens a local modal → browser-required fields are c
 
 ```mermaid
 flowchart TD
-  V[Visitor browser] -->|HTTP static assets| H[Vercel static deployment]
-  H --> A[Admin Hub HTML + inline JavaScript]
-  H --> E[Employee Hub HTML + inline JavaScript]
-  H --> M[Manager Hub HTML + inline JavaScript]
-  H --> S[Staffing Monitor HTML + inline JavaScript]
-  M --> D[staffing-data.js]
-  E --> D
-  S --> D
+  V[Visitor browser] -->|HTTP| H[Vercel Next.js deployment]
+  H --> N[Next.js App Router]
+  N --> R[React route page]
+  R --> F[PrototypeFrame component]
+  F --> A[Same-origin prototype compatibility page]
+  A --> JS[Original inline browser JavaScript]
+  JS --> D[public/staffing-data.js]
   D --> L[(Browser localStorage<br/>staffing schedule)]
-  A --> W[(Browser localStorage<br/>Admin state)]
-  E --> W
-  W --> R[(Employee request and time-entry keys)]
-  A --> R
-  M -. same-tab custom event / other-tab storage event .-> E
-  M -. same-tab custom event / other-tab storage event .-> S
-  E -. same-tab custom event / other-tab storage event .-> S
+  JS --> W[(Browser localStorage<br/>Admin, clock, requests, and time entries)]
+  A -. custom event / storage event .-> A
 ```
 
-The event arrows represent browser UI refreshes. They do not connect different people’s browsers.
+The Next.js app owns route handling and metadata; each current compatibility document executes in a same-origin iframe to preserve local demo interactions. Browser storage and events are shared only by documents on the same origin and browser profile, not between different people’s browsers.
 
 ### Layers and boundaries
 
 | Layer | Current implementation |
 |---|---|
-| Frontend | Plain HTML, CSS, and vanilla JavaScript. Admin, Employee, Manager, and Monitor templates are mostly self-contained. No React/Vue/Angular or component package is present. |
-| Application logic | Inline functions and event listeners in each HTML page. Admin and Employee pages use browser-local state for selected demo workflows; staffing pages call `StaffingData`. |
+| Frontend | Next.js 16 App Router, React, and TypeScript route shell in `app/`; reusable iframe wrapper in `components/prototype-frame.tsx`. Hub screens are still legacy HTML/CSS/vanilla-JS compatibility assets under `public/prototypes/`. |
+| Application logic | Existing Admin, Employee, Manager, and Monitor behavior remains in the inline scripts in `public/prototypes/`; staffing pages call the browser utility in `public/staffing-data.js`. New routes and features must use React/TypeScript. |
 | API/backend | None found in the workspace or current deployment manifest. No request handler, server code, API contract, or service boundary exists. |
 | Persistence | Browser `localStorage` for staffing, supported Admin demo state, employee-specific clock sessions, employee clock-out records, and employee PTO/expense/IT requests. This is same-browser/origin storage, not server persistence. |
 | Database | None. No SQL, Prisma, Supabase, migrations, database client, or policy definitions were found. |
 | Authentication | None in application code. Vercel project protection is a separate hosting setting. |
 | Authorization | None in application code. Role/profile filtering is client-side and non-secure. |
 | AI/automation | No model, prompt, agent runtime, or workflow engine. Admin “Automations” is sample UI with local toggles. |
-| Hosting | Vercel project `employee-hub-prototype`; latest deployment metadata at audit showed framework `null`, production target, `READY`, and region `iad1`. No local Vercel config or build manifest is present. |
+| Hosting | A Next.js build manifest now exists at repository root. The prior Vercel project `employee-hub-prototype` remains a separate static deployment unless/until a Git-connected Next.js project is confirmed; deployment status and aliases must be updated from live Vercel metadata. |
 
 ### Source structure
 
 ```text
 project root/
-├── .git/                               # Local Git metadata; main tracks origin/main
-├── AGENTS.md                          # Direct-to-GitHub working preference and repository rules
-├── README.md                           # Platform summary
-├── RIPPLING_BENCHMARK.md              # Public product-category benchmark and gap map
-├── outputs/
-│   ├── company-system-prototype.html   # Admin Hub and company-wide module previews
-│   ├── employee-hub-prototype.html     # Employee Hub and manager employee-profile context
-│   ├── manager-hub-prototype.html      # Manager staffing schedule and booking forms
-│   ├── staffing-monitor.html           # Read-only staffing summary and filters
-│   └── staffing-data.js                # Shared localStorage schedule utility and demo roster
-├── work/                               # Empty at audit time
+├── AGENTS.md                          # GitHub/Vercel publishing preference and Next.js development rules
+├── README.md                           # Stack, routes, and development commands
+├── package.json                        # Next.js, React, TypeScript scripts/dependencies
+├── next.config.ts                      # Next.js configuration
+├── tsconfig.json                       # TypeScript configuration
+├── app/
+│   ├── layout.tsx                       # Root metadata/layout
+│   ├── globals.css                     # Route-frame shell styling
+│   ├── page.tsx                         # Admin Hub at /
+│   ├── admin/page.tsx                   # Admin Hub alias
+│   ├── employee/page.tsx                # Employee Hub; preserves profile query
+│   ├── manager/page.tsx                 # Manager Hub
+│   └── staffing/page.tsx                # Staffing Monitor; preserves profile query
+├── components/prototype-frame.tsx      # Same-origin compatibility view wrapper
+├── public/
+│   ├── staffing-data.js                 # Runtime staffing localStorage utility
+│   └── prototypes/*.html                # Current legacy hub views, mounted by App Router
+├── outputs/                             # Original prototype snapshots retained for reference
+├── RIPPLING_BENCHMARK.md               # Public product-category benchmark and gap map
 └── SYSTEM_MASTER_OVERVIEW.md           # This document
 ```
 
-The live repository is `https://github.com/BlackNubi/Canis-Lupus` on branch `main`. Source artifacts live under `outputs/`; `AGENTS.md` records the user's direct-to-GitHub workflow preference, and `RIPPLING_BENCHMARK.md` records the public product-category comparison. No package manifest, application API, database code, migrations, CI workflow, or production authentication code has been found. The Vercel project is not Git-linked; deployment must be verified separately from GitHub commits.
+The live repository is `https://github.com/BlackNubi/Canis-Lupus` on branch `main`. The Next.js App Router is the current route/build source. Runtime compatibility pages are copied under `public/prototypes/`; the original single-file prototypes under `outputs/` are preserved as archival snapshots. No application API, database, migrations, test suite, or production authentication code has been found.
 
 ## I. Database and Data Model
 
@@ -531,8 +538,8 @@ Status terms:
 
 | Capability | Status | Evidence / qualification |
 |---|---|---|
-| Admin Hub navigation and 20 module screens | PARTIALLY IMPLEMENTED | Static HTML/JS pages with sample state; numerous placeholder actions. |
-| Admin sample forms and supported local interactions | PARTIALLY IMPLEMENTED | `actriv_admin_preview_v1` preserves supported forms/statuses in one browser; unsupported integrations remain placeholders. |
+| Next.js App Router and five hub entry routes | IMPLEMENTED for route delivery | `/`, `/admin/`, `/employee/`, `/manager/`, and `/staffing/` are React server-component routes. The current hub UI remains inside same-origin compatibility views. |
+| Admin Hub navigation and 20 module screens | PARTIALLY IMPLEMENTED | Compatibility HTML/JS views preserve sample state and local interactions; numerous integrations/actions remain placeholders. |\n| Admin sample forms and supported local interactions | PARTIALLY IMPLEMENTED | `actriv_admin_preview_v1` preserves supported forms/statuses in one browser; unsupported integrations remain placeholders. |
 | Employee Hub navigation, shortcuts, search preview | IMPLEMENTED for navigation preview | Search index is local and static; no content retrieval or permission checks. |
 | Employee clock in/out/break | PARTIALLY IMPLEMENTED | Active session and break persist per profile in browser storage; clock-out writes a local entry. No server timesheet/payroll handoff. |
 | Employee PTO/expense/IT request previews | PARTIALLY IMPLEMENTED | Employee request history persists locally; Admin can review PTO/expense requests from the same browser. No authentication or notifications. |
@@ -545,8 +552,8 @@ Status terms:
 | Authentication and role/data authorization | PLANNED | No application identity or permission enforcement present. |
 | Database, API, migrations, audit log | PLANNED | None found in workspace/deployment manifest. |
 | Production automations and AI | Not implemented | No execution engine, AI provider, prompts, or agent code. |
-| Automated tests / CI | UNVERIFIED / absent in workspace | No test files, package manifest, or CI workflow found. |
-| Vercel production deployment | IMPLEMENTED as static hosting | Connected project metadata showed latest deployment `READY`; app behavior remains prototype-only. |
+| Automated tests / CI | UNVERIFIED / absent in workspace | No test suite or CI workflow is present. The Vercel Next.js build is the current deployment compile check. |
+| Vercel production deployment | UNVERIFIED for Next.js until a linked project/build is confirmed | The existing `employee-hub-prototype` Vercel project was a static deployment; verify the Git-connected Next.js project and its production URL separately. |
 
 ## P. Known Issues, Risks, and Technical Debt
 
@@ -578,6 +585,7 @@ These risks reflect the current prototype after adding browser-local demo workfl
 - Expose staffing monitoring through the hubs while keeping the Manager Hub focused on manager/employee/staffing views and not presenting Admin navigation there.
 - Support company modules including People, Payroll, Benefits, Time & Attendance, Time Off, Learning, and Performance.
 - Keep the blue/green theme.
+- Use Next.js App Router, React, and TypeScript throughout the application. Migrate current compatibility screens into React incrementally while preserving existing workflow behavior and shared-storage contracts.
 - User previously requested link-based viewing for “any person with the link.” This is a sharing preference for a prototype, not a permission design for real employee data.
 
 These requests are recorded in conversation history, not in separate requirements/specification files in this project.
@@ -592,7 +600,7 @@ The feature category comparison and its evidence limits are documented in [RIPPL
 4. **Connect source systems deliberately:** HRIS/directory, payroll, benefits, timekeeping, ITSM, identity/app provisioning, expenses/accounting, LMS, calendars, and notification services according to authorized access.
 5. **Complete production hub workflows:** move local request, time, staffing, learning, and goal previews to a server-backed data model; add balance/approval history, assigned calendars/pay dates, notifications, and integrations.
 6. **Harden and modularize:** output encoding, server-side validation, CSRF/session protections where applicable, audit logging, shared UI components/design tokens, error handling, and data-retention policy.
-7. **Add repeatable quality gates:** choose a runtime/build workflow, add automated unit/contract/browser tests, CI, accessibility checks, and safe preview/production deployment steps.
+7. **Add repeatable quality gates:** add automated unit/contract/browser tests, CI, accessibility checks, and safe preview/production deployment steps. The Next.js runtime/build workflow is now established.
 
 Prioritize identity/data authorization and backend boundaries before connecting real employee or financial information.
 
@@ -613,7 +621,7 @@ Any AI agent, LLM, developer, or automation modifying this project must follow t
 11. Do not add real employee, payroll, health, bank, identity, or credential data to static public files or localStorage demos.
 12. Keep keyboard behavior, focus visibility, labels, responsive layout, contrast, and status announcements in UI changes.
 13. Validate untrusted values before rendering; do not propagate raw user text into template-string HTML.
-14. Do not introduce unnecessary frameworks or architecture. If adding a backend, define its purpose and security boundary first.
+14. Use the established Next.js App Router, React, and TypeScript stack for all new application code; do not add a second frontend framework. If adding a backend, define its purpose and security boundary first.
 15. Do not claim an integration, authorization check, database transaction, notification, or audit event exists unless code and deployment evidence show it.
 16. Do not expose credentials, share tokens, private keys, or environment values in code, logs, docs, screenshots, or responses.
 17. Test relevant behavior after code changes. Since no test harness is present now, first identify the smallest reliable validation approach and document any manual coverage or limitations; do not imply a test ran when it did not.
@@ -680,4 +688,4 @@ Any AI agent, LLM, developer, or automation modifying this project must follow t
 
 ### Audit limits
 
-This audit covered all files discoverable in the project workspace and queried the connected Vercel project/deployment metadata. At the initial source audit the workspace had no Git history; it has since been connected to the public GitHub repository, whose initial README commit is the parent of the local project snapshot. The application and overview files are committed locally but have not yet been pushed. The workspace contains no backend, database, tests, package/build manifest, CI workflow, or formal requirements/specification documents. Therefore, production integrations, actual authentication policy outside the returned Vercel metadata, runtime behavior across browsers, and any external systems not represented in the workspace are **unverified**.
+This audit inspected the repository files on GitHub `main` and the connected Vercel project metadata available during the review. The project now has a Next.js/React/TypeScript build manifest and App Router routes. Existing interface workflows still execute from same-origin static compatibility documents under `public/prototypes/`; no backend, database, migrations, test suite, CI workflow, or production authentication code has been found. The Git-connected Next.js production deployment and any runtime behavior not verified through that deployment remain subject to the latest Vercel result. Therefore, production integrations, real identity policy, multi-user persistence, and external systems not represented in source remain **unverified**.

@@ -10,3 +10,12 @@
 - Read the current remote files and branch state before every write. Preserve existing content and remote changes. Never force-push or overwrite unexpected edits.
 - If direct GitHub writes are unavailable, stop before making local-only changes and report the specific blocker. If deployment is unavailable or blocked, still complete and push authorized changes to GitHub when possible, then report the precise deployment blocker. Never claim work is live unless GitHub confirms the resulting commit and Vercel confirms the deployment.
 - This standing authorization applies to routine work in this repository. It does not authorize destructive history rewrites, deleting unrelated data, changing account or repository security/access/billing settings, or writing to other repositories; obtain approval for those actions.
+
+
+## Application framework standard
+
+- Use Next.js 16 App Router with React and TypeScript for application routes and new product UI. Put routes in `app/`, shared UI in `components/`, and reusable domain/data logic in `lib/`. Do not add another frontend framework or new standalone HTML app pages.
+- Prefer React Server Components. Add client components only where browser interaction or browser APIs require them.
+- The current hubs in `public/prototypes/` are same-origin compatibility views that preserve the existing browser workflows while they are migrated. Do not add new features to these legacy files; implement new functionality in Next.js and migrate existing interactions incrementally without dropping behavior or changing shared storage contracts unintentionally.
+- `outputs/*.html` are archival snapshots, not production routes. Keep them available as reference while the compatibility UI remains.
+- Keep the Next.js app deployable from the repository root through the Git-connected Vercel project. Verify a production deployment before describing a change as live.
