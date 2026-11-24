@@ -44,7 +44,7 @@ The product direction is one connected workforce workspace with a distinct perso
 - Employee schedule confirmation and change-request interactions.
 - A staffing monitor with schedule counts, facility coverage summaries, search, and filters.
 - Shared demo staffing state through browser `localStorage` on the same origin.
-- A Next.js App Router route/build layer intended for Git-connected Vercel deployment; the compatibility views still run their original browser-side JavaScript.
+- A Next.js App Router route/build layer linked to the GitHub `main` branch on Vercel; the compatibility views still run their original browser-side JavaScript.
 
 ### High-level operation
 
@@ -363,7 +363,7 @@ The Next.js app owns route handling and metadata; each current compatibility doc
 | Authentication | None in application code. Vercel project protection is a separate hosting setting. |
 | Authorization | None in application code. Role/profile filtering is client-side and non-secure. |
 | AI/automation | No model, prompt, agent runtime, or workflow engine. Admin “Automations” is sample UI with local toggles. |
-| Hosting | A Next.js build manifest now exists at repository root. The prior Vercel project `employee-hub-prototype` remains a separate static deployment unless/until a Git-connected Next.js project is confirmed; deployment status and aliases must be updated from live Vercel metadata. |
+| Hosting | Vercel project `employee-hub-prototype` is linked to `BlackNubi/Canis-Lupus` on `main` and its framework setting is `nextjs`; the repository root is the build root. A Git deployment made before this framework setting was changed compiled but returned 404 for App Router paths. A post-configuration production deployment must be checked before claiming routes are live. |
 
 ### Source structure
 
@@ -465,7 +465,7 @@ No HTTP API endpoints or callable backend services were identified. There are no
 
 ### External services and deployment
 
-- **Vercel:** static hosting/deployment. Latest project metadata at audit: `employee-hub-prototype`, framework unset (`null`), production deployment state `READY`, aliases included `employee-hub-prototype-two.vercel.app` and `employee-hub-prototype-robert-cbc0.vercel.app`. Vercel returned no Git-linked projects for the team; the deployed production project is not automatically connected to the GitHub repository at this time. This metadata may change after the audit.
+- **Vercel:** project `employee-hub-prototype` is Git-linked to `BlackNubi/Canis-Lupus` on `main`, configured with framework `nextjs`, and uses the repository root. The existing stable alias is `employee-hub-prototype-two.vercel.app`. The most recent ready build before the framework setting change still returned 404 for App Router routes, so the post-configuration production build and route availability are unverified until deployment checks pass.
 - **Vercel protection:** project metadata reported password protection disabled and SSO protection enabled for `all_except_custom_domains`. Protection behavior is hosting-level and may differ by alias/share URL. It is not a substitute for in-app user identity or authorization.
 - No live Rippling, ShiftNex, payroll, benefits, HRIS, accounting, identity, IT, calendar, Slack, email, or notification integration was found.
 - The source uses root-relative same-origin page links and a local script include. No external script/font/API dependency was identified in the audited artifacts.
@@ -553,7 +553,7 @@ Status terms:
 | Database, API, migrations, audit log | PLANNED | None found in workspace/deployment manifest. |
 | Production automations and AI | Not implemented | No execution engine, AI provider, prompts, or agent code. |
 | Automated tests / CI | UNVERIFIED / absent in workspace | No test suite or CI workflow is present. The Vercel Next.js build is the current deployment compile check. |
-| Vercel production deployment | UNVERIFIED for Next.js until a linked project/build is confirmed | The existing `employee-hub-prototype` Vercel project was a static deployment; verify the Git-connected Next.js project and its production URL separately. |
+| Vercel production deployment | UNVERIFIED pending post-configuration production build | The project is now linked to GitHub `main` and configured for Next.js, but the previous build returned 404 for app routes. Confirm a new production build and route response. |
 
 ## P. Known Issues, Risks, and Technical Debt
 
@@ -688,4 +688,4 @@ Any AI agent, LLM, developer, or automation modifying this project must follow t
 
 ### Audit limits
 
-This audit inspected the repository files on GitHub `main` and the connected Vercel project metadata available during the review. The project now has a Next.js/React/TypeScript build manifest and App Router routes. Existing interface workflows still execute from same-origin static compatibility documents under `public/prototypes/`; no backend, database, migrations, test suite, CI workflow, or production authentication code has been found. The Git-connected Next.js production deployment and any runtime behavior not verified through that deployment remain subject to the latest Vercel result. Therefore, production integrations, real identity policy, multi-user persistence, and external systems not represented in source remain **unverified**.
+This audit inspected the repository files on GitHub `main` and the connected Vercel project metadata available during the review. The project now has a Next.js/React/TypeScript build manifest and App Router routes. Existing interface workflows still execute from same-origin static compatibility documents under `public/prototypes/`; no backend, database, migrations, test suite, CI workflow, or production authentication code has been found. The Git-connected project and Next.js framework setting are confirmed, but app-route delivery is awaiting a successful production redeploy after that setting changed. Therefore, production integrations, real identity policy, multi-user persistence, and external systems not represented in source remain **unverified**.
