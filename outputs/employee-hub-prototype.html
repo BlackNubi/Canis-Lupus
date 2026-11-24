@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#174f4a">
+  <title>Employee Hub · Prototype</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #213b39;
+      --muted: #71817d;
+      --teal: #174f4a;
+      --teal-deep: #123d39;
+      --teal-soft: #e5efeb;
+      --paper: #f7f6f0;
+      --surface: #fffefa;
+      --line: #e6e8df;
+      --gold: #d7a85b;
+      --coral: #c87861;
+      --shadow: 0 10px 28px rgba(32, 57, 54, .055);
+      --radius: 16px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); min-height: 100vh; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #ddb45e; outline-offset: 3px; }
+    a { color: inherit; }
+    .app { min-height: 100vh; }
+    .sidebar {
+      position: fixed; z-index: 20; inset: 0 auto 0 0; width: 254px; padding: 23px 15px 17px;
+      background: var(--teal); color: #eef5f0; display: flex; flex-direction: column;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 3px 11px 29px; }
+    .brand-mark { width: 35px; height: 35px; border-radius: 11px; display: grid; place-items: center; color: var(--teal-deep); background: #e8d19d; font-weight: 850; font-size: 17px; letter-spacing: -.08em; }
+    .brand-name { font-size: 15px; font-weight: 720; letter-spacing: -.025em; }
+    .brand-caption { margin-top: 2px; color: #b8d0c8; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    .nav-label { color: #9cbbb2; padding: 0 12px 9px; font-size: 10px; text-transform: uppercase; letter-spacing: .13em; font-weight: 700; }
+    .nav { display: grid; gap: 4px; }
+    .nav-item { width: 100%; border: 0; border-radius: 10px; padding: 10px 11px; display: flex; align-items: center; gap: 12px; color: #d5e4df; background: transparent; text-align: left; font-size: 13px; transition: background .16s ease, color .16s ease, transform .16s ease; }
+    .nav-item:hover { background: rgba(255,255,255,.09); color: white; transform: translateX(2px); }
+    .nav-item.active { background: #f0f3ec; color: var(--teal-deep); font-weight: 680; }
+    .nav-item svg { width: 17px; height: 17px; flex: 0 0 auto; stroke: currentColor; }
+    .sidebar-bottom { margin-top: auto; }
+    .profile-switch { display: flex; gap: 10px; align-items: center; padding: 14px 9px 4px; border-top: 1px solid rgba(236,247,241,.16); }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: #d8e8dd; color: var(--teal); display: grid; place-items: center; font-size: 11px; font-weight: 750; flex: 0 0 auto; }
+    .avatar.large { width: 54px; height: 54px; font-size: 16px; }
+    .profile-name { font-size: 12px; font-weight: 670; }
+    .profile-role { color: #afc8c0; font-size: 10px; margin-top: 3px; }
+    .profile-menu { margin-left: auto; color: #bfd4ce; background: none; border: 0; padding: 5px; }
+    .prototype-note { margin: 14px 8px 0; padding: 10px 11px; color: #c1d4ce; border: 1px solid rgba(255,255,255,.16); border-radius: 10px; font-size: 10px; line-height: 1.5; }
+    .main { margin-left: 254px; min-height: 100vh; }
+    .topbar { height: 78px; padding: 0 clamp(24px, 4vw, 56px); display: flex; align-items: center; justify-content: space-between; gap: 22px; border-bottom: 1px solid rgba(219,224,214,.8); background: rgba(247,246,240,.9); }
+    .crumb { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .crumb strong { color: var(--ink); font-weight: 670; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .top-icon { height: 37px; width: 37px; border: 1px solid var(--line); border-radius: 11px; display: grid; place-items: center; color: var(--teal); background: var(--surface); position: relative; }
+    .top-icon:hover { background: var(--teal-soft); }
+    .top-icon svg { width: 17px; height: 17px; stroke: currentColor; }
+    .top-icon .dot { position: absolute; right: 7px; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--coral); border: 1px solid white; }
+    .content { max-width: 1380px; margin: 0 auto; padding: 35px clamp(24px, 4vw, 56px) 58px; }
+    .welcome-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 22px; margin-bottom: 24px; }
+    .eyebrow { color: #728a83; font-weight: 750; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; margin: 0 0 9px; }
+    h1 { font-size: clamp(26px, 3vw, 34px); letter-spacing: -.055em; line-height: 1.12; font-weight: 700; margin: 0; color: #183d39; }
+    .welcome-sub { color: var(--muted); font-size: 13px; margin: 9px 0 0; line-height: 1.6; }
+    .welcome-sub strong { color: #526a64; font-weight: 650; }
+    .date-pill { padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,254,250,.65); color: #6c7d77; font-size: 11px; white-space: nowrap; }
+    .search-wrap { position: relative; margin-bottom: 25px; }
+    .searchbox { height: 54px; display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid #e0e4da; border-radius: 13px; padding: 0 16px; box-shadow: 0 3px 10px rgba(32,57,54,.025); }
+    .searchbox:focus-within { border-color: #8caea4; box-shadow: 0 0 0 3px rgba(83,131,117,.1); }
+    .searchbox svg { width: 19px; height: 19px; color: #728880; stroke: currentColor; flex: 0 0 auto; }
+    .searchbox input { border: 0; outline: 0; background: transparent; color: var(--ink); width: 100%; min-width: 0; font-size: 13px; }
+    .searchbox input::placeholder { color: #93a09a; }
+    .search-hint { color: #899790; border: 1px solid #e5e7df; border-radius: 5px; padding: 3px 6px; font-size: 10px; white-space: nowrap; }
+    .search-results { position: absolute; z-index: 15; inset: calc(100% + 7px) 0 auto; display: none; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; box-shadow: 0 15px 35px rgba(25,54,48,.15); max-height: 360px; overflow: auto; }
+    .search-results.open { display: block; }
+    .result-heading { padding: 8px 10px 7px; color: #81908a; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+    .result-item { width: 100%; border: 0; background: transparent; border-radius: 9px; text-align: left; padding: 10px; display: flex; gap: 12px; align-items: center; color: var(--ink); }
+    .result-item:hover { background: #f2f5f0; }
+    .result-type { width: 31px; height: 31px; border-radius: 9px; background: #ebf1ed; color: var(--teal); display: grid; place-items: center; font-size: 10px; font-weight: 750; }
+    .result-title { font-size: 12px; font-weight: 680; }
+    .result-desc { color: var(--muted); font-size: 10px; margin-top: 3px; }
+    .search-empty { padding: 15px 11px; color: var(--muted); font-size: 12px; }
+    .section-title { display: flex; align-items: center; gap: 9px; margin: 0 0 13px; color: #294944; font-size: 14px; font-weight: 720; letter-spacing: -.015em; }
+    .section-title .rule { height: 1px; flex: 1; background: var(--line); margin-left: 4px; }
+    .attention-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 13px; margin-bottom: 27px; }
+    .info-card, .panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+    .info-card { min-height: 144px; padding: 17px 18px 16px; }
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 15px; }
+    .card-label { font-size: 11px; color: #657a73; font-weight: 700; }
+    .card-icon { width: 29px; height: 29px; border-radius: 9px; background: #ecf2ed; color: #427267; display: grid; place-items: center; }
+    .card-icon svg { width: 15px; height: 15px; stroke: currentColor; }
+    .status-line { font-size: 14px; color: #294641; font-weight: 700; letter-spacing: -.02em; }
+    .card-copy { color: #788780; font-size: 11px; line-height: 1.55; margin-top: 5px; }
+    .text-action { margin-top: 10px; border: 0; padding: 0; background: none; color: #2d7064; font-size: 10px; font-weight: 750; }
+    .text-action:hover { text-decoration: underline; }
+    .status-tag { color: #88724c; background: #f6f0df; padding: 5px 7px; border-radius: 6px; font-size: 9px; font-weight: 720; letter-spacing: .02em; }
+    .status-tag.green { color: #3e705d; background: #e6f0e9; }
+    .clock-panel { margin: -9px 0 25px; padding: 16px 19px; display: flex; align-items: center; justify-content: space-between; gap: 18px; border-color: #dfe7dd; }
+    .clock-main { display: flex; align-items: center; gap: 22px; min-width: 0; }
+    .clock-heading { display: flex; align-items: center; gap: 11px; min-width: 150px; }
+    .clock-heading h2 { margin: 0; font-size: 13px; letter-spacing: -.015em; }
+    .clock-heading p { margin: 4px 0 0; font-size: 10px; color: var(--muted); }
+    .clock-symbol { width: 36px; height: 36px; border-radius: 11px; background: #edf3ed; color: #397265; display: grid; place-items: center; }
+    .clock-symbol svg { width: 18px; height: 18px; stroke: currentColor; }
+    .clock-status-wrap { padding-left: 18px; border-left: 1px solid var(--line); }
+    .clock-status { margin-top: 5px; color: #294641; font-size: 13px; font-weight: 720; }
+    .clock-detail { color: #788780; font-size: 10px; margin-top: 3px; }
+    .clock-actions { display: flex; align-items: center; gap: 16px; }
+    .clock-note { color: #89958e; font-size: 9px; line-height: 1.4; max-width: 175px; }
+    .clock-buttons { display: flex; gap: 7px; }
+    [hidden] { display: none !important; }
+    .shortcut-panel { padding: 18px; margin-bottom: 27px; }
+    .panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+    .panel-heading h2 { margin: 0; font-size: 14px; letter-spacing: -.015em; }
+    .panel-heading p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
+    .quiet-link { border: 0; background: none; padding: 0; color: #36756a; font-size: 10px; font-weight: 700; }
+    .shortcut-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+    .shortcut { min-height: 69px; display: flex; align-items: center; gap: 10px; padding: 11px 10px; text-align: left; background: #fbfcf8; border: 1px solid #edf0e9; border-radius: 11px; color: var(--ink); transition: .15s ease; }
+    .shortcut:hover { background: #f1f6f0; border-color: #ccddd3; transform: translateY(-1px); }
+    .shortcut-icon { flex: 0 0 auto; width: 31px; height: 31px; border-radius: 9px; background: #e8f0e9; color: #397265; display: grid; place-items: center; }
+    .shortcut-icon svg { width: 15px; height: 15px; stroke: currentColor; }
+    .shortcut span:last-child { font-size: 11px; font-weight: 650; line-height: 1.3; }
+    .bottom-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 14px; }
+    .resource-panel, .office-panel { padding: 19px; }
+    .resource-list { display: grid; gap: 5px; margin-top: 12px; }
+    .resource-row { display: flex; gap: 11px; align-items: center; padding: 9px 7px; border-radius: 9px; cursor: pointer; }
+    .resource-row:hover { background: #f5f6f0; }
+    .doc-icon { width: 30px; height: 33px; display: grid; place-items: center; flex: 0 0 auto; color: #688479; background: #edf2ec; border-radius: 7px; }
+    .doc-icon svg { width: 15px; height: 15px; stroke: currentColor; }
+    .resource-title { font-size: 11px; font-weight: 680; }
+    .resource-meta { color: #8a9690; font-size: 9px; margin-top: 4px; }
+    .resource-arrow { margin-left: auto; color: #9aa69f; font-size: 16px; }
+    .office-card { display: flex; gap: 12px; align-items: flex-start; padding: 13px; margin-top: 12px; border-radius: 11px; background: #f6f6ef; }
+    .office-mark { width: 34px; height: 34px; display: grid; place-items: center; background: #e9eee6; color: #54786e; border-radius: 10px; }
+    .office-mark svg { width: 17px; height: 17px; stroke: currentColor; }
+    .office-title { font-size: 12px; font-weight: 700; }
+    .office-copy { color: #7d8a83; font-size: 10px; line-height: 1.5; margin-top: 5px; }
+    .page-intro { margin-bottom: 21px; display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+    .page-intro p { margin: 8px 0 0; color: var(--muted); font-size: 12px; max-width: 580px; line-height: 1.55; }
+    .page-actions { display: flex; align-items: center; gap: 8px; }
+    .btn { display: inline-flex; justify-content: center; align-items: center; gap: 7px; min-height: 37px; border-radius: 9px; padding: 0 12px; border: 1px solid #dce4dc; background: var(--surface); color: #315a51; font-size: 11px; font-weight: 680; }
+    .btn:hover { background: #f1f6f1; }
+    .btn.primary { border-color: var(--teal); background: var(--teal); color: white; }
+    .btn.primary:hover { background: var(--teal-deep); }
+    .btn svg { width: 14px; height: 14px; stroke: currentColor; }
+    .page-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    .page-card { padding: 19px; }
+    .page-card h2 { font-size: 13px; margin: 0; letter-spacing: -.01em; }
+    .page-card .subtle { color: var(--muted); font-size: 10px; line-height: 1.55; margin: 6px 0 0; }
+    .empty-state { padding: 20px 13px; margin-top: 14px; border-radius: 11px; background: #f7f8f3; border: 1px dashed #dce4da; display: flex; gap: 12px; align-items: flex-start; }
+    .empty-state .state-symbol { width: 30px; height: 30px; border-radius: 9px; background: #ecf1eb; color: #587b6f; display: grid; place-items: center; flex: 0 0 auto; }
+    .empty-state .state-symbol svg { width: 15px; height: 15px; stroke: currentColor; }
+    .empty-state strong { display: block; font-size: 11px; margin: 1px 0 4px; }
+    .empty-state p { margin: 0; color: #77857e; font-size: 10px; line-height: 1.5; }
+    .simple-list { margin-top: 14px; display: grid; gap: 8px; }
+    .simple-row { display: flex; gap: 11px; align-items: center; padding: 11px; background: #fafbf7; border: 1px solid #edf0e9; border-radius: 10px; }
+    .simple-row .row-copy { min-width: 0; }
+    .simple-row strong { display: block; font-size: 11px; }
+    .simple-row small { display: block; margin-top: 3px; font-size: 9px; color: var(--muted); }
+    .simple-row .right { margin-left: auto; color: #87958d; font-size: 9px; text-align: right; }
+    .person-card { display: flex; align-items: center; gap: 12px; padding: 13px; margin-top: 13px; border: 1px solid #edf0e9; background: #fbfcf8; border-radius: 11px; }
+    .person-card strong { font-size: 11px; }
+    .person-card small { display: block; color: var(--muted); margin-top: 4px; font-size: 9px; }
+    .person-card .btn { margin-left: auto; min-height: 31px; font-size: 9px; }
+    .calendar-blank { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-top: 14px; }
+    .calendar-blank span { display: grid; min-height: 30px; place-items: center; color: #98a39c; background: #f7f8f3; border-radius: 6px; font-size: 9px; }
+    .calendar-blank span:first-child { color: #668076; font-weight: 700; }
+    .callout { display: flex; align-items: flex-start; gap: 10px; padding: 12px; margin-top: 13px; color: #65786f; background: #f7f3e7; border: 1px solid #eee4ca; border-radius: 10px; font-size: 10px; line-height: 1.5; }
+    .callout svg { flex: 0 0 auto; width: 15px; height: 15px; stroke: #9d8052; }
+    .page-section { display: none; animation: fade-in .18s ease-out; }
+    .page-section.active { display: block; }
+    @keyframes fade-in { from { opacity: .45; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+    .toast { position: fixed; z-index: 60; bottom: 22px; left: 50%; transform: translate(-50%, 16px); opacity: 0; pointer-events: none; background: #183e39; color: #fff; padding: 11px 15px; border-radius: 10px; box-shadow: 0 9px 24px rgba(16,46,41,.25); font-size: 11px; transition: .22s ease; max-width: calc(100vw - 32px); }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .overlay { position: fixed; z-index: 50; inset: 0; display: none; place-items: center; padding: 18px; background: rgba(23,48,43,.38); backdrop-filter: blur(2px); }
+    .overlay.open { display: grid; }
+    .dialog { width: min(100%, 470px); background: var(--surface); border: 1px solid rgba(255,255,255,.65); border-radius: 16px; box-shadow: 0 24px 70px rgba(13,40,35,.25); padding: 21px; animation: fade-in .16s ease-out; }
+    .dialog-head { display: flex; justify-content: space-between; gap: 15px; align-items: flex-start; margin-bottom: 17px; }
+    .dialog-head h2 { margin: 0; font-size: 17px; letter-spacing: -.03em; }
+    .dialog-head p { margin: 6px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .close { border: 0; background: #f1f3ed; color: #60746c; width: 29px; height: 29px; border-radius: 8px; font-size: 18px; line-height: 1; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field { display: grid; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { color: #526962; font-size: 10px; font-weight: 700; }
+    .field input, .field select, .field textarea { width: 100%; border: 1px solid #dfe5dc; border-radius: 8px; padding: 9px 10px; background: #fffefa; color: var(--ink); font-size: 11px; }
+    .field textarea { min-height: 65px; resize: vertical; }
+    .dialog-note { color: #8a7957; background: #f8f3e7; border-radius: 8px; padding: 9px 10px; margin-top: 12px; font-size: 9px; line-height: 1.5; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 17px; }
+    .mobile-menu { display: none; }
+    .screen-reader { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 1050px) {
+      .attention-grid { grid-template-columns: 1fr 1fr; }
+      .attention-grid .info-card:first-child { grid-column: 1 / -1; min-height: 125px; }
+      .shortcut-grid { grid-template-columns: repeat(4,1fr); }
+    }
+    @media (max-width: 760px) {
+      .sidebar { width: 250px; transform: translateX(-102%); transition: transform .2s ease; box-shadow: 15px 0 30px rgba(16,45,40,.15); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .topbar { height: 65px; padding: 0 17px; gap: 12px; }
+      .mobile-menu { display: grid; place-items: center; width: 36px; height: 36px; background: white; border: 1px solid var(--line); border-radius: 9px; color: var(--teal); flex: 0 0 auto; }
+      .mobile-menu svg { width: 17px; height: 17px; stroke: currentColor; }
+      .crumb { margin-right: auto; overflow: hidden; text-overflow: ellipsis; }
+      .top-actions { gap: 7px; }
+      .content { padding: 27px 17px 40px; }
+      .welcome-row { margin-bottom: 20px; }
+      .date-pill { display: none; }
+      .shortcut-grid { grid-template-columns: repeat(2,1fr); }
+      .bottom-grid, .page-grid { grid-template-columns: 1fr; }
+      .attention-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+      .info-card { padding: 14px; min-height: 137px; }
+      .attention-grid .info-card:first-child { min-height: 124px; }
+      .search-hint { display: none; }
+      .page-intro { align-items: flex-start; flex-direction: column; }
+      .clock-panel { align-items: flex-start; flex-direction: column; gap: 14px; }
+      .clock-main { flex-wrap: wrap; gap: 15px; }
+      .clock-actions { width: 100%; justify-content: space-between; }
+    }
+    @media (max-width: 420px) {
+      .attention-grid { grid-template-columns: 1fr; }
+      .attention-grid .info-card:first-child { grid-column: auto; }
+      .shortcut-panel { padding: 15px; }
+      .shortcut { min-height: 64px; padding: 9px 8px; gap: 8px; }
+      .shortcut span:last-child { font-size: 10px; }
+      .shortcut-icon { width: 29px; height: 29px; }
+      .panel-heading { align-items: flex-start; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .dialog { padding: 17px; }
+      .clock-main { align-items: flex-start; flex-direction: column; }
+      .clock-status-wrap { padding: 0; border-left: 0; }
+      .clock-actions { align-items: flex-start; flex-direction: column; }
+      .clock-note { max-width: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+    .employee-staffing-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.employee-staffing-tools select{height:34px;border:1px solid var(--line);border-radius:8px;background:white;padding:0 10px;color:var(--ink);font-size:11px}.employee-week-tools{display:flex;align-items:center;gap:7px}.employee-week-label{min-width:175px;text-align:center;font-size:10px;font-weight:700;color:var(--ink)}.employee-week-grid{display:grid;grid-template-columns:repeat(7,minmax(115px,1fr));gap:8px;overflow:auto}.employee-day{min-height:175px;border:1px solid var(--line);border-radius:10px;background:#fffefa;padding:9px}.employee-day.today{border-color:#77a89f;background:#f2f8f5}.employee-day-title{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:750;margin-bottom:8px}.employee-day-title small{font-size:9px;color:var(--muted);font-weight:500}.employee-shift{padding:8px;border:1px solid #e4e9e3;border-left:3px solid var(--teal);border-radius:7px;background:#fff;margin:6px 0}.employee-shift strong{font-size:9px;display:block}.employee-shift small{display:block;margin-top:4px;color:var(--muted);font-size:8px;line-height:1.35}.employee-shift .shift-response{display:flex;gap:5px;margin-top:7px}.employee-shift button{border:1px solid #d7e3dc;border-radius:6px;background:#f5faf7;color:var(--teal);padding:4px 6px;font-size:8px;font-weight:700}.employee-shift button:hover{background:var(--teal-soft)}.employee-shift .shift-state{display:inline-block;padding:3px 6px;border-radius:10px;background:var(--teal-soft);color:var(--teal);font-size:8px;font-weight:700;margin-top:6px}.employee-empty{padding:9px 2px;color:#8b9894;font-size:9px}.employee-shift-list{display:grid;gap:8px}.employee-staffing-note{padding:10px 12px;background:#eff6f3;color:#4c6963;border-radius:8px;font-size:9px;line-height:1.5;margin:0 0 12px}@media(max-width:800px){.employee-week-grid{grid-template-columns:repeat(7,142px)}.employee-staffing-tools{width:100%}.employee-week-label{min-width:130px}}
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" fill="none" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="none" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" fill="none" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="none" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="none" stroke-width="1.8"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2" fill="none" stroke-width="1.8"/><path d="M3 9h18M16 14h2" fill="none" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke-width="1.8"/><path d="M9.6 9a2.5 2.5 0 1 1 4.4 1.6c-1.1 1.2-2 1.4-2 3M12 17.5v.1" fill="none" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" fill="none" stroke-width="1.8"/><path d="M3 20c.3-3.4 2.3-5 6-5s5.7 1.6 6 5M16 5.5a3 3 0 0 1 0 5.8M17 15c2.5.4 3.8 2 4 4.5" fill="none" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2zM8 8h8M8 12h8M8 16h4" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke-width="1.8"/><path d="M16 3v4M8 3v4M3 10h18" fill="none" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22zM4 5.5v14A2.5 2.5 0 0 1 6.5 17H20" fill="none" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke-width="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5M9 13h7M9 17h7" fill="none" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke-width="1.8"/><path d="M12 7v5l3 2" fill="none" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="none" stroke-width="1.8"/><circle cx="12" cy="10" r="2.5" fill="none" stroke-width="1.8"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="12" rx="1.5" fill="none" stroke-width="1.8"/><path d="M2 20h20l-2-4H4z" fill="none" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plane" viewBox="0 0 24 24"><path d="m3 11 18-8-7 18-3-7-8-3Z M11 14l5-5" fill="none" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke-width="1.8"/><path d="M4 21c0-4 3-6 8-6s8 2 8 6" fill="none" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke-width="1.8"/><path d="M12 11v5M12 8h.01" fill="none" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </svg>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="brand"><div class="brand-mark">eh</div><div><div class="brand-name">Employee Hub</div><div class="brand-caption">People · tools · work</div></div></div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav" id="navigation">
+        <button class="nav-item active" data-page="home"><svg><use href="#i-home"/></svg><span>Home</span></button>
+        <button class="nav-item" data-page="resources"><svg><use href="#i-grid"/></svg><span>My Resources</span></button>
+        <button class="nav-item" data-page="pay"><svg><use href="#i-wallet"/></svg><span>Pay and Benefits</span></button>
+        <button class="nav-item" data-page="it"><svg><use href="#i-help"/></svg><span>IT Help</span></button>
+        <button class="nav-item" data-page="directory"><svg><use href="#i-people"/></svg><span>Directory</span></button>
+        <button class="nav-item" data-page="expenses"><svg><use href="#i-receipt"/></svg><span>Expenses</span></button>
+        <button class="nav-item" data-page="timeoff"><svg><use href="#i-calendar"/></svg><span>Time Off</span></button>
+        <button class="nav-item" data-page="staffing"><svg><use href="#i-clock"/></svg><span>Staffing calendar</span></button>
+        <button class="nav-item" data-page="company"><svg><use href="#i-book"/></svg><span>Company Resources</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="prototype-note">Prototype preview<br>Employee records and live workflows are not connected.</div>
+        <div class="profile-switch"><div class="avatar" id="profileInitials">RL</div><div><div class="profile-name" id="profileName">Robert Lumumba</div><div class="profile-role" id="profileRole">Healthcare Recruiter</div></div><button class="profile-menu" aria-label="Profile options" data-action="profile">···</button></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation"><svg><use href="#i-grid"/></svg></button>
+        <div class="crumb"><strong>Employee Hub</strong><span> / </span><span id="breadcrumb">Home</span></div>
+        <div class="top-actions"><button class="top-icon" aria-label="Notifications" data-action="notifications"><svg><use href="#i-bell"/></svg><div class="avatar" id="profileTopInitials" aria-label="Robert Lumumba">RL</div></div>
+      </header>
+      <div class="content">
+        <section class="page-section active" id="page-home" aria-labelledby="home-title">
+          <div class="welcome-row">
+            <div><p class="eyebrow"><span id="todayWeekday">Your day</span> · Your workspace</p><h1 id="home-title">Welcome, Robert</h1><p class="welcome-sub" id="welcomeProfile"><strong>Healthcare Recruiter</strong> · Field Recruiting · Nairobi<br>Manager: Joseph Azenga</p></div>
+            <div class="date-pill" id="todayPill">Your local date</div>
+          </div>
+
+          <div class="search-wrap">
+            <label class="screen-reader" for="globalSearch">Search policies, people, apps, or answers</label>
+            <div class="searchbox"><svg><use href="#i-search"/></svg><input id="globalSearch" type="search" autocomplete="off" placeholder="Find a policy, person, app, or answer…"><span class="search-hint">Search</span></div>
+            <div class="search-results" id="searchResults" role="listbox" aria-label="Search results"></div>
+          </div>
+
+          <section class="panel clock-panel" aria-labelledby="clock-title">
+            <div class="clock-main">
+              <div class="clock-heading"><span class="clock-symbol"><svg><use href="#i-clock"/></svg></span><div><h2 id="clock-title">Time clock</h2><p>Keep track of your workday</p></div></div>
+              <div class="clock-status-wrap"><span class="status-tag">Preview only</span><div class="clock-status" id="clockStatus" aria-live="polite">Not clocked in</div><div class="clock-detail" id="clockDetail">No time entry is active in this preview.</div></div>
+            </div>
+            <div class="clock-actions"><div class="clock-note">Clock entries are local to this page. Nothing is submitted or saved.</div><div class="clock-buttons"><button class="btn" id="breakButton" data-action="breakToggle" hidden>Take break</button><button class="btn primary" id="clockInButton" data-action="clockIn">Clock in</button><button class="btn primary" id="clockOutButton" data-action="clockOut" hidden>Clock out</button></div></div>
+          </section>
+
+          <h2 class="section-title">Your overview <span class="rule"></span></h2>
+          <div class="attention-grid">
+            <article class="info-card">
+              <div class="card-top"><span class="card-label">Needs your attention</span><span class="card-icon"><svg><use href="#i-check"/></svg></span></div>
+              <div class="status-line">Tasks and approvals</div><div class="card-copy">Your task list is unavailable while the employee workflow connection is off.</div><button class="text-action" data-page-link="resources">View My Resources <span aria-hidden="true">→</span></button>
+            </article>
+            <article class="info-card">
+              <div class="card-top"><span class="card-label">Coming up</span><span class="status-tag">Not connected</span></div>
+              <div class="status-line">Your local calendar</div><div class="card-copy">Holiday and payroll schedules need your assigned office calendar.</div><button class="text-action" data-page-link="timeoff">Open Time Off <span aria-hidden="true">→</span></button>
+            </article>
+            <article class="info-card">
+              <div class="card-top"><span class="card-label">Your shortcuts</span><span class="status-tag green">Ready to explore</span></div>
+              <div class="status-line">Tools for your role</div><div class="card-copy">Quick paths to recruiting resources, office info, and common actions.</div><button class="text-action" data-page-link="resources">Browse resources <span aria-hidden="true">→</span></button>
+            </article>
+          </div>
+
+          <section class="panel shortcut-panel" aria-labelledby="actions-title">
+            <div class="panel-heading"><div><h2 id="actions-title">Common actions</h2><p>Frequently used employee workflows</p></div><span class="status-tag">Prototype links</span></div>
+            <div class="shortcut-grid">
+              <button class="shortcut" data-action="paystub"><span class="shortcut-icon"><svg><use href="#i-file"/></svg></span><span>View paystub</span></button>
+              <button class="shortcut" data-action="pto"><span class="shortcut-icon"><svg><use href="#i-calendar"/></svg></span><span>Request PTO</span></button>
+              <button class="shortcut" data-action="expense"><span class="shortcut-icon"><svg><use href="#i-receipt"/></svg></span><span>Submit expense</span></button>
+              <button class="shortcut" data-action="ticket"><span class="shortcut-icon"><svg><use href="#i-laptop"/></svg></span><span>Open IT ticket</span></button>
+              <button class="shortcut" data-action="coworker"><span class="shortcut-icon"><svg><use href="#i-people"/></svg></span><span>Find a coworker</span></button>
+              <button class="shortcut" data-action="personal"><span class="shortcut-icon"><svg><use href="#i-user"/></svg></span><span>Update personal info</span></button>
+              <button class="shortcut" data-action="benefits"><span class="shortcut-icon"><svg><use href="#i-wallet"/></svg></span><span>Review benefits</span></button>
+              <button class="shortcut" data-action="handbook"><span class="shortcut-icon"><svg><use href="#i-book"/></svg></span><span>Read handbook</span></button>
+            </div>
+          </section>
+
+          <div class="bottom-grid">
+            <section class="panel resource-panel"><div class="panel-heading"><div><h2>Useful resources</h2><p>Explore the pages included in this prototype</p></div><button class="quiet-link" data-page-link="company">See all</button></div>
+              <div class="resource-list">
+                <div class="resource-row" role="button" tabindex="0" data-action="handbook"><span class="doc-icon"><svg><use href="#i-file"/></svg></span><span><span class="resource-title">Employee handbook</span><span class="resource-meta">Company Resources · illustrative destination</span></span><span class="resource-arrow">›</span></div>
+                <div class="resource-row" role="button" tabindex="0" data-action="benefits"><span class="doc-icon"><svg><use href="#i-file"/></svg></span><span><span class="resource-title">Benefits overview</span><span class="resource-meta">Pay and Benefits · connection required</span></span><span class="resource-arrow">›</span></div>
+                <div class="resource-row" role="button" tabindex="0" data-page-link="it"><span class="doc-icon"><svg><use href="#i-file"/></svg></span><span><span class="resource-title">Request app access</span><span class="resource-meta">IT Help · support workflow preview</span></span><span class="resource-arrow">›</span></div>
+              </div>
+            </section>
+            <section class="panel office-panel"><div class="panel-heading"><div><h2>Office information</h2><p>Based on your profile context</p></div></div>
+              <div class="office-card"><div class="office-mark"><svg><use href="#i-pin"/></svg></div><div><div class="office-title">Nairobi · Field Recruiting</div><div class="office-copy">Your assigned office location and holiday calendar should come from your employee profile. Local dates are not available in this preview.</div><button class="text-action" data-page-link="timeoff">View calendar settings →</button></div></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page-section" id="page-resources" aria-labelledby="resources-title">
+          <div class="page-intro"><div><p class="eyebrow">Workspace</p><h1 id="resources-title">My Resources</h1><p>Your assigned apps, personal tasks, saved links, and role-relevant resources in one place.</p></div><div class="page-actions"><button class="btn" data-action="personal"><svg><use href="#i-user"/></svg>Update profile</button></div></div>
+          <div class="page-grid">
+            <article class="panel page-card"><h2>Tasks and requests</h2><p class="subtle">Personal items visible to you in the connected employee systems.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-info"/></svg></span><div><strong>Task connection unavailable</strong><p>This preview cannot tell whether you have anything pending. Connect an authorised task source to see your current items.</p></div></div></article>
+            <article class="panel page-card"><h2>Apps for your work</h2><p class="subtle" id="roleResourceCopy">Suggested paths for a Healthcare Recruiter in Field Recruiting.</p><div class="simple-list"><div class="simple-row"><span class="shortcut-icon"><svg><use href="#i-people"/></svg></span><span class="row-copy"><strong id="roleAppName">Recruiting workspace</strong><small>Open your authorised work tools</small></span><button class="btn" data-action="app">Open</button></div><div class="simple-row"><span class="shortcut-icon"><svg><use href="#i-book"/></svg></span><span class="row-copy"><strong id="roleGuideName">Field recruiting guide</strong><small id="roleGuideCopy">Role resource · illustrative destination</small></span><button class="btn" data-action="guide">View</button></div></div></article>
+            <article class="panel page-card"><h2>Saved links</h2><p class="subtle">Keep useful tools and pages close at hand.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-grid"/></svg></span><div><strong>No saved links in this preview</strong><p>Saved items will appear here after a connected employee profile is available.</p></div></div></article>
+            <article class="panel page-card"><h2>Profile details</h2><p class="subtle">Your profile context for this prototype.</p><div class="simple-list"><div class="simple-row"><span class="row-copy"><strong>Role</strong><small id="profileDetailRole">Healthcare Recruiter</small></span><span class="right" id="profileDetailTeam">Field Recruiting</span></div><div class="simple-row"><span class="row-copy"><strong>Location</strong><small id="profileDetailLocation">Nairobi</small></span><span class="right">Profile context</span></div><div class="simple-row"><span class="row-copy"><strong>Manager</strong><small id="profileDetailManager">Joseph Azenga</small></span><span class="right">Profile context</span></div></div></article>
+          </div>
+        </section>
+
+        <section class="page-section" id="page-pay" aria-labelledby="pay-title">
+          <div class="page-intro"><div><p class="eyebrow">Personal information</p><h1 id="pay-title">Pay and Benefits</h1><p>Access payroll documents and manage coverage through authorised company systems.</p></div><div class="page-actions"><button class="btn primary" data-action="benefits">Manage benefits</button></div></div>
+          <div class="page-grid"><article class="panel page-card"><h2>Pay statements</h2><p class="subtle">Only you can access personal payroll documents.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-wallet"/></svg></span><div><strong>Payroll connection required</strong><p>Paystubs and pay dates are unavailable in this preview. Connect the authorised payroll source to view your own records.</p></div></div></article><article class="panel page-card"><h2>Benefits enrollment</h2><p class="subtle">Your current elections and coverage links.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-info"/></svg></span><div><strong>Enrollment details unavailable</strong><p>Benefit information is personal and will appear here only after an authorised connection.</p></div></div></article></div>
+        </section>
+
+        <section class="page-section" id="page-it" aria-labelledby="it-title">
+          <div class="page-intro"><div><p class="eyebrow">Support</p><h1 id="it-title">IT Help</h1><p>Get help with your work devices, apps, and access.</p></div><div class="page-actions"><button class="btn primary" data-action="ticket"><svg><use href="#i-plus"/></svg>Open a ticket</button></div></div>
+          <div class="page-grid"><article class="panel page-card"><h2>Your support requests</h2><p class="subtle">Tickets and status visible to your account.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-help"/></svg></span><div><strong>Support system disconnected</strong><p>Your open ticket count and current status cannot be checked from this preview.</p></div></div></article><article class="panel page-card"><h2>Devices and app access</h2><p class="subtle">Company assigned devices and requests.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-laptop"/></svg></span><div><strong>Device details unavailable</strong><p>Device inventory and app access depend on your company's IT connection.</p></div></div></article><article class="panel page-card"><h2>Quick support</h2><p class="subtle">Common routes to IT help.</p><div class="simple-list"><button class="simple-row" data-action="ticket"><span class="shortcut-icon"><svg><use href="#i-laptop"/></svg></span><span class="row-copy"><strong>Report a technical issue</strong><small>Opens the support request preview</small></span><span class="resource-arrow">›</span></button><button class="simple-row" data-action="access"><span class="shortcut-icon"><svg><use href="#i-plus"/></svg></span><span class="row-copy"><strong>Request app access</strong><small>Access request preview</small></span><span class="resource-arrow">›</span></button></div></article></div>
+        </section>
+
+        <section class="page-section" id="page-directory" aria-labelledby="directory-title">
+          <div class="page-intro"><div><p class="eyebrow">People</p><h1 id="directory-title">Directory</h1><p>Find colleagues by name, role, team, or office. Profile cards show only details you are allowed to view.</p></div></div>
+          <div class="searchbox" style="max-width:660px"><svg><use href="#i-search"/></svg><input id="directorySearch" type="search" placeholder="Search colleagues…" aria-label="Search colleagues"></div>
+          <div class="panel page-card" id="managerContactCard" style="margin-top:15px;max-width:660px"><h2 id="directoryCardHeading">Manager</h2><p class="subtle" id="directoryCardCopy">The only colleague provided in this prototype's profile context.</p><div class="person-card"><div class="avatar" id="directoryPersonInitials">JA</div><div><strong id="directoryPersonName">Joseph Azenga</strong><small id="directoryPersonRole">Manager · profile context</small></div><span class="status-tag">Contact details unavailable</span></div><div class="callout"><svg><use href="#i-info"/></svg><span>Email, Slack, org chart, and skills will appear when an authorised directory is connected. No additional employee records are loaded in this prototype.</span></div></div>
+        </section>
+
+        <section class="page-section" id="page-expenses" aria-labelledby="expenses-title">
+          <div class="page-intro"><div><p class="eyebrow">Personal finance</p><h1 id="expenses-title">Expenses</h1><p>Track your submissions and reimbursement status, with approvals shown only when you are authorised to review them.</p></div><div class="page-actions"><button class="btn primary" data-action="expense"><svg><use href="#i-plus"/></svg>Submit expense</button></div></div>
+          <div class="page-grid"><article class="panel page-card"><h2>Your expenses</h2><p class="subtle">Draft and submitted expenses linked to your account.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-receipt"/></svg></span><div><strong>Expense system disconnected</strong><p>Drafts, submissions, and reimbursement status are not available in this preview.</p></div></div></article><article class="panel page-card"><h2>Approvals</h2><p class="subtle">Items appear here only for authorised reviewers.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-check"/></svg></span><div><strong>Approval access not connected</strong><p>Reviewer permissions have not been checked, so no approval list is shown.</p></div></div></article></div>
+        </section>
+
+        <section class="page-section" id="page-timeoff" aria-labelledby="timeoff-title">
+          <div class="page-intro"><div><p class="eyebrow">Schedule and leave</p><h1 id="timeoff-title">Time Off</h1><p>Review leave balances and requests alongside the calendar assigned to your employee profile.</p></div><div class="page-actions"><button class="btn primary" data-action="pto"><svg><use href="#i-plus"/></svg>Request time off</button></div></div>
+          <div class="page-grid"><article class="panel page-card"><h2>Leave balance</h2><p class="subtle">Personal balance and approved leave.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-calendar"/></svg></span><div><strong>Leave connection required</strong><p>Your balance and approved dates are not available in this preview.</p></div></div></article><article class="panel page-card"><h2>Assigned office calendar</h2><p class="subtle">Your holiday schedule is based on the office assigned in your profile.</p><div class="empty-state"><span class="state-symbol"><svg><use href="#i-pin"/></svg></span><div><strong>Calendar not assigned</strong><p>Nairobi is shown as profile context. The authoritative office calendar is not connected, so no holidays or payroll dates are displayed.</p></div></div><div class="calendar-blank" aria-label="Calendar unavailable"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span></div></article></div>
+        </section>
+
+        <section class="page-section" id="page-company" aria-labelledby="company-title">
+          <div class="page-intro"><div><p class="eyebrow">Knowledge</p><h1 id="company-title">Company Resources</h1><p>Find the handbook, policies, office guides, and company documents.</p></div><div class="page-actions"><span class="status-tag">Illustrative pages</span></div></div>
+          <section class="panel page-card"><div class="panel-heading"><div><h2>Browse resources</h2><p>These entries are example destinations for the prototype, not connected company documents.</p></div><button class="btn" data-action="resourceSearch"><svg><use href="#i-search"/></svg>Search resources</button></div><div class="page-grid"><div class="simple-row" role="button" tabindex="0" data-action="handbook"><span class="doc-icon"><svg><use href="#i-book"/></svg></span><span class="row-copy"><strong>Employee handbook</strong><small>Company policies · example destination</small></span><span class="resource-arrow">›</span></div><div class="simple-row" role="button" tabindex="0" data-action="expensePolicy"><span class="doc-icon"><svg><use href="#i-file"/></svg></span><span class="row-copy"><strong>Travel and expense policy</strong><small>Expenses · example destination</small></span><span class="resource-arrow">›</span></div><div class="simple-row" role="button" tabindex="0" data-action="timePolicy"><span class="doc-icon"><svg><use href="#i-calendar"/></svg></span><span class="row-copy"><strong>Time off policy</strong><small>Leave · example destination</small></span><span class="resource-arrow">›</span></div><div class="simple-row" role="button" tabindex="0" data-action="officeGuide"><span class="doc-icon"><svg><use href="#i-pin"/></svg></span><span class="row-copy"><strong>Office guides</strong><small>Location information · example destination</small></span><span class="resource-arrow">›</span></div></div><div class="callout"><svg><use href="#i-info"/></svg><span>Connected content should show its owner, last-updated date, and the destination you are authorised to open. This prototype contains no live documents.</span></div></section>
+        </section>
+        <section class="page-section" id="page-staffing" aria-labelledby="staffing-title">
+          <div class="page-intro"><div><p class="eyebrow">Work schedule</p><h1 id="staffing-title">Staffing calendar</h1><p>Review the assigned provider, facility, date, and time. Confirm the shift or flag a mismatch for your manager.</p></div><div class="page-actions"><a class="btn" id="employeeMonitorLink" href="/staffing/?profile=robert">Staffing monitor <span aria-hidden="true">↗</span></a></div></div>
+          <div class="employee-staffing-note"><strong>Prototype schedule:</strong> shift changes are saved in this browser and shown in Manager Hub and Staffing Monitor on this device. They do not sync to other users or devices. Confirming a shift records that the employee reviewed its scheduled time; live scheduling and credential systems are not connected.</div>
+          <section class="panel page-card"><div class="panel-heading"><div><h2>My assigned shifts</h2><p>Confirm the details, or request a correction if the date or time does not match your agreement.</p></div><div class="employee-staffing-tools"><strong id="employeeScheduleName">Robert Lumumba</strong><span>· Personal calendar</span><div class="employee-week-tools"><button class="btn" id="employeePrevWeek" aria-label="Previous week">‹</button><span class="employee-week-label" id="employeeWeekLabel"></span><button class="btn" id="employeeNextWeek" aria-label="Next week">›</button></div></div></div><div class="panel-body"><div class="employee-week-grid" id="employeeStaffingWeek" aria-live="polite"></div><div class="employee-shift-list" id="employeeStaffingList" style="margin-top:14px"></div></div></section>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="overlay" id="dialogOverlay" role="presentation"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" id="dialogBox"></div></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/staffing-data.js"></script>
+  <script>
+    const titles = {home:'Home',resources:'My Resources',pay:'Pay and Benefits',it:'IT Help',directory:'Directory',expenses:'Expenses',timeoff:'Time Off',staffing:'Staffing calendar',company:'Company Resources'};
+    const icon = name => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
+    const nav = document.getElementById('navigation');
+    const toast = document.getElementById('toast');
+    const today = new Date();
+    document.getElementById('todayWeekday').textContent = new Intl.DateTimeFormat(undefined, {weekday:'long'}).format(today);
+    document.getElementById('todayPill').textContent = new Intl.DateTimeFormat(undefined, {weekday:'long',month:'long',day:'numeric'}).format(today);
+    let clockInAt = null;
+    let breakStartedAt = null;
+    let breakDurationMs = 0;
+    let toastTimer;
+    function showToast(message) { toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 3000); }
+    function go(page) {
+      if (!titles[page]) return;
+      document.querySelectorAll('.page-section').forEach(el => el.classList.toggle('active', el.id === `page-${page}`));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+      document.getElementById('breadcrumb').textContent = titles[page];
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('searchResults').classList.remove('open');
+      if (page === 'staffing') renderEmployeeStaffing();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+    nav.addEventListener('click', e => { const item = e.target.closest('[data-page]'); if (item) go(item.dataset.page); });
+    document.addEventListener('click', e => {
+      const link = e.target.closest('[data-page-link]'); if (link) go(link.dataset.pageLink);
+      const action = e.target.closest('[data-action]'); if (action) runAction(action.dataset.action);
+      if (!e.target.closest('.search-wrap')) document.getElementById('searchResults').classList.remove('open');
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closeDialog(); document.getElementById('searchResults').classList.remove('open'); document.getElementById('sidebar').classList.remove('open'); }
+      const row = e.target.closest('[role="button"][data-action]');
+      if (row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); runAction(row.dataset.action); }
+    });
+    document.getElementById('mobileMenu').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    const actionLabels = {
+      paystub:['Pay statements','Payroll connection required','Paystubs and pay dates are personal information. This prototype has no connection to your payroll provider, so it cannot open or display a real statement.'],
+      benefits:['Benefits enrollment','Authorised connection required','Your current coverage and enrollment destination will appear here after your company connects an authorised benefits system.'],
+      app:['Recruiting workspace','Destination not connected','The recruiting app destination has not been provided to this prototype. Connect your company app directory to open the correct authorised tool.'],
+      guide:['Field recruiting guide','Illustrative destination','This example link stands in for a role-specific guide. No company document is connected.'],
+      handbook:['Employee handbook','Illustrative destination','This prototype does not include a live handbook. A connected resource should show its owner and last-updated date before opening.'],
+      expensePolicy:['Travel and expense policy','Illustrative destination','This prototype does not include a live policy document.'],
+      timePolicy:['Time off policy','Illustrative destination','This prototype does not include a live policy document.'],
+      officeGuide:['Office guides','Illustrative destination','Office details and location-specific dates require the assigned office source.'],
+      personal:['Personal information','Profile connection required','Profile edits must be saved through your company’s authorised HR system. No changes are made in this preview.'],
+      access:['Request app access','IT workflow unavailable','The authorised IT request workflow is not connected. No access request was created.'],
+      resourceSearch:['Search company resources','Search preview','Use the search box on the home page to explore the prototype’s example destinations. No company documents are connected.'],
+      notifications:['Notifications','No notification connection','Your notifications are unavailable in this preview. This does not indicate whether you have pending items.'],
+      profile:['Profile options','Profile connection required','Profile settings open through the connected employee system. No profile updates are available in this preview.'],
+      coworker:['Find a coworker','Directory connection required','Only your manager’s name was supplied as profile context. Connect the authorised directory to search for other coworkers.']
+    };
+    function openDialog(html) {
+      document.getElementById('dialogBox').innerHTML = html;
+      document.getElementById('dialogOverlay').classList.add('open');
+      const first = document.querySelector('#dialogBox input, #dialogBox select, #dialogBox button'); if (first) first.focus();
+    }
+    function closeDialog() { document.getElementById('dialogOverlay').classList.remove('open'); }
+    function messageDialog(key) {
+      const [title, status, desc] = actionLabels[key] || ['Unavailable','Connection required','This action requires an authorised company connection.'];
+      openDialog(`<div class="dialog-head"><div><h2 id="dialogTitle">${title}</h2><p>${status}</p></div><button class="close" aria-label="Close dialog" data-action="close">×</button></div><div class="empty-state"><span class="state-symbol">${icon('info')}</span><div><strong>Preview only</strong><p>${desc}</p></div></div><div class="dialog-actions"><button class="btn primary" data-action="close">Got it</button></div>`);
+    }
+    function formDialog(kind) {
+      const isPto = kind === 'pto';
+      const title = isPto ? 'Request time off' : kind === 'expense' ? 'Submit an expense' : 'Open an IT ticket';
+      const content = isPto
+        ? `<div class="form-grid"><div class="field"><label for="startDate">First day</label><input id="startDate" type="date" required></div><div class="field"><label for="endDate">Last day</label><input id="endDate" type="date" required></div><div class="field full"><label for="leaveType">Leave type</label><select id="leaveType"><option>Annual leave</option><option>Sick leave</option><option>Other</option></select></div><div class="field full"><label for="ptoNote">Note to your manager</label><textarea id="ptoNote" placeholder="Optional note"></textarea></div></div><div class="dialog-note">This is a local preview. Submitting will not create or send a leave request.</div>`
+        : kind === 'expense'
+        ? `<div class="form-grid"><div class="field"><label for="expenseType">Category</label><select id="expenseType"><option>Travel</option><option>Meals</option><option>Supplies</option><option>Other</option></select></div><div class="field"><label for="amount">Amount</label><input id="amount" type="number" min="0" step="0.01" placeholder="0.00"></div><div class="field full"><label for="expenseNote">Description</label><textarea id="expenseNote" placeholder="What was this expense for?"></textarea></div></div><div class="dialog-note">This is a local preview. No expense record or reimbursement request will be created.</div>`
+        : `<div class="form-grid"><div class="field full"><label for="issue">What do you need help with?</label><select id="issue"><option>Device issue</option><option>App access</option><option>Software problem</option><option>Other</option></select></div><div class="field full"><label for="issueNote">Describe the issue</label><textarea id="issueNote" placeholder="Add a short description"></textarea></div></div><div class="dialog-note">This is a local preview. No IT ticket will be submitted or sent.</div>`;
+      openDialog(`<form id="previewForm"><div class="dialog-head"><div><h2 id="dialogTitle">${title}</h2><p>Complete the example form to preview the workflow.</p></div><button type="button" class="close" aria-label="Close dialog" data-action="close">×</button></div>${content}<div class="dialog-actions"><button type="button" class="btn" data-action="close">Cancel</button><button type="submit" class="btn primary">Preview submit</button></div></form>`);
+      document.getElementById('previewForm').addEventListener('submit', e => { e.preventDefault(); closeDialog(); showToast('Preview complete — nothing was sent or saved.'); });
+    }
+    function runAction(action) {
+      if (action === 'close') { closeDialog(); return; }
+      if (['pto','expense','ticket'].includes(action)) { formDialog(action); return; }
+      if (action === 'clockIn') {
+        if (clockInAt) return;
+        clockInAt = new Date();
+        breakStartedAt = null;
+        breakDurationMs = 0;
+        document.getElementById('clockStatus').textContent = 'Clocked in · ' + clockInAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+        document.getElementById('clockDetail').textContent = 'Preview session active · ' + clockInAt.toLocaleDateString([], {month:'short',day:'numeric'});
+        document.getElementById('clockInButton').hidden = true;
+        document.getElementById('clockOutButton').hidden = false;
+        document.getElementById('breakButton').hidden = false;
+        document.getElementById('breakButton').textContent = 'Take break';
+        return;
+      }
+      if (action === 'breakToggle') {
+        if (!clockInAt) return;
+        const breakButton = document.getElementById('breakButton');
+        if (!breakStartedAt) {
+          breakStartedAt = new Date();
+          document.getElementById('clockStatus').textContent = 'On break · ' + breakStartedAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+          document.getElementById('clockDetail').textContent = 'Break in progress · end it when you return';
+          breakButton.textContent = 'End break';
+        } else {
+          const resumedAt = new Date();
+          breakDurationMs += resumedAt - breakStartedAt;
+          const breakMinutes = Math.max(0, Math.round(breakDurationMs / 60000));
+          breakStartedAt = null;
+          document.getElementById('clockStatus').textContent = 'Clocked in · resumed ' + resumedAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+          document.getElementById('clockDetail').textContent = `Break time so far · ${breakMinutes} minute${breakMinutes === 1 ? '' : 's'}`;
+          breakButton.textContent = 'Take break';
+        }
+        return;
+      }
+      if (action === 'clockOut') {
+        if (!clockInAt) return;
+        const endedAt = new Date();
+        if (breakStartedAt) {
+          breakDurationMs += endedAt - breakStartedAt;
+          breakStartedAt = null;
+        }
+        const breakMinutes = Math.max(0, Math.round(breakDurationMs / 60000));
+        const workedMinutes = Math.max(0, Math.round((endedAt - clockInAt - breakDurationMs) / 60000));
+        document.getElementById('clockStatus').textContent = 'Clocked out · ' + endedAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+        document.getElementById('clockDetail').textContent = `Preview · ${workedMinutes} min worked · ${breakMinutes} min break · resets when you reload`;
+        clockInAt = null;
+        document.getElementById('clockInButton').hidden = false;
+        document.getElementById('clockOutButton').hidden = true;
+        document.getElementById('breakButton').hidden = true;
+        return;
+      }
+      if (action === 'timeOff') { go('timeoff'); return; }
+      messageDialog(action);
+    }
+
+    const searchIndex = [
+      {title:'My Resources', type:'Page', desc:'Tasks, saved links, and role resources', page:'resources', terms:'task apps profile recruiter'},
+      {title:'Pay and Benefits', type:'Page', desc:'Personal payroll and enrollment', page:'pay', terms:'paystub payroll pay benefits coverage'},
+      {title:'IT Help', type:'Page', desc:'Support requests, devices, and access', page:'it', terms:'ticket laptop device access app'},
+      {title:'Directory', type:'Page', desc:'Find colleagues and team information', page:'directory', terms:'coworker manager person people'},
+      {title:'Expenses', type:'Page', desc:'Personal submissions and approvals', page:'expenses', terms:'receipt reimbursement expense submit'},
+      {title:'Time Off', type:'Page', desc:'Leave requests and assigned calendar', page:'timeoff', terms:'pto holiday leave vacation calendar'},
+      {title:'Company Resources', type:'Page', desc:'Handbook, policies, and office guides', page:'company', terms:'policy handbook office company guide'},
+      {title:'Staffing calendar', type:'Page', desc:'Provider shifts, dates, times, and employee confirmations', page:'staffing', terms:'shift staffing schedule provider calendar confirm time'},
+      {title:'Employee handbook', type:'Example resource', desc:'Illustrative destination · not connected', action:'handbook', terms:'handbook policy'},
+      {title:'Joseph Azenga', type:'Profile context', desc:'Manager · contact details unavailable', page:'directory', terms:'manager joseph azenga'},
+      {title:'Recruiting workspace', type:'Example app', desc:'Destination not connected', action:'app', terms:'recruiting healthcare recruiter'}
+    ];
+    const searchInput = document.getElementById('globalSearch');
+    const searchResults = document.getElementById('searchResults');
+    function renderSearch(query) {
+      const q = query.trim().toLowerCase();
+      if (!q) { searchResults.classList.remove('open'); return; }
+      const matches = searchIndex.filter(item => `${item.title} ${item.desc} ${item.terms}`.toLowerCase().includes(q)).slice(0,7);
+      searchResults.innerHTML = matches.length ? `<div class="result-heading">Prototype results</div>${matches.map((item,i)=>`<button class="result-item" role="option" data-result="${i}"><span class="result-type">${item.type.split(' ').map(x=>x[0]).join('').slice(0,2)}</span><span><span class="result-title">${item.title}</span><span class="result-desc">${item.desc}</span></span></button>`).join('')}` : '<div class="search-empty">No matching prototype pages. Try “time off”, “pay”, “manager”, or “handbook”.</div>';
+      searchResults.classList.add('open');
+      searchResults.querySelectorAll('[data-result]').forEach((button) => button.addEventListener('click', () => {
+        const match = matches[Number(button.dataset.result)];
+        if (match.page) go(match.page); else if (match.action) runAction(match.action);
+        searchInput.value = ''; searchResults.classList.remove('open');
+      }));
+    }
+    searchInput.addEventListener('input', () => renderSearch(searchInput.value));
+    searchInput.addEventListener('focus', () => { if (searchInput.value) renderSearch(searchInput.value); });
+    document.getElementById('directorySearch').addEventListener('keydown', e => { if (e.key === 'Enter') showToast('Directory search requires an authorised employee connection.'); });
+    document.getElementById('dialogOverlay').addEventListener('click', e => { if (e.target.id === 'dialogOverlay') closeDialog(); });
+    document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); searchInput.focus(); } });
+    document.querySelectorAll('[data-page-link]').forEach(el => { if (el.tagName === 'BUTTON') return; el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(el.dataset.pageLink); } }); });
+
+    const staffingData = window.StaffingData;
+    const employeeProfile = new URLSearchParams(window.location.search).get('profile') === 'manager'
+      ? {name:'Joseph Azenga',first:'Joseph',initials:'JA',role:'Clinical Operations Manager',team:'Clinical Operations',location:'Nairobi',manager:'Not listed'}
+      : {name:'Robert Lumumba',first:'Robert',initials:'RL',role:'Healthcare Recruiter',team:'Field Recruiting',location:'Nairobi',manager:'Joseph Azenga'};
+    let employeeStaffingWeekOffset = 0;
+    const fmtShiftTime = value => { if (!value) return '—'; const [h,m] = value.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`; };
+    function applyEmployeeProfile() {
+      document.getElementById('home-title').textContent = `Welcome, ${employeeProfile.first}`;
+      document.getElementById('welcomeProfile').innerHTML = `<strong>${employeeProfile.role}</strong> · ${employeeProfile.team} · ${employeeProfile.location}<br>${employeeProfile.manager === 'Not listed' ? 'Reporting line unavailable' : `Manager: ${employeeProfile.manager}`}`;
+      document.getElementById('profileName').textContent = employeeProfile.name;
+      document.getElementById('profileRole').textContent = employeeProfile.role;
+      document.getElementById('profileInitials').textContent = employeeProfile.initials;
+      document.getElementById('profileTopInitials').textContent = employeeProfile.initials;
+      document.getElementById('profileTopInitials').setAttribute('aria-label', employeeProfile.name);
+      document.getElementById('roleResourceCopy').textContent = `Suggested paths for a ${employeeProfile.role} in ${employeeProfile.team}.`;
+      document.getElementById('roleAppName').textContent = employeeProfile.team === 'Clinical Operations' ? 'Operations workspace' : 'Recruiting workspace';
+      document.getElementById('roleGuideName').textContent = employeeProfile.team === 'Clinical Operations' ? 'Manager reference' : 'Field recruiting guide';
+      document.getElementById('roleGuideCopy').textContent = 'Role resource · illustrative destination';
+      document.getElementById('profileDetailRole').textContent = employeeProfile.role;
+      document.getElementById('profileDetailTeam').textContent = employeeProfile.team;
+      document.getElementById('profileDetailLocation').textContent = employeeProfile.location;
+      document.getElementById('profileDetailManager').textContent = employeeProfile.manager;
+      document.getElementById('employeeMonitorLink').href = employeeProfile.name === 'Joseph Azenga' ? '/staffing/?profile=manager' : '/staffing/?profile=robert';
+      const directoryHeading = document.getElementById('directoryCardHeading');
+      if (employeeProfile.name === 'Joseph Azenga') {
+        directoryHeading.textContent = 'My profile';
+        document.getElementById('directoryCardCopy').textContent = 'This profile is the only manager record loaded in this prototype.';
+        document.getElementById('directoryPersonInitials').textContent = employeeProfile.initials;
+        document.getElementById('directoryPersonName').textContent = employeeProfile.name;
+        document.getElementById('directoryPersonRole').textContent = `${employeeProfile.role} · profile context`;
+      }
+      document.getElementById('employeeScheduleName').textContent = employeeProfile.name;
+    }
+    function renderEmployeeStaffing() {
+      const week = document.getElementById('employeeStaffingWeek');
+      if (!week || !staffingData) return;
+      const days = staffingData.weekStart();
+      days.setDate(days.getDate() + employeeStaffingWeekOffset * 7);
+      const weekDays = Array.from({length:7}, (_,i) => staffingData.addDays(days,i));
+      document.getElementById('employeeWeekLabel').textContent = `${staffingData.dateLabel(staffingData.iso(weekDays[0]),{month:'short',day:'numeric'})} – ${staffingData.dateLabel(staffingData.iso(weekDays[6]),{month:'short',day:'numeric',year:'numeric'})}`;
+      const shifts = staffingData.load().filter(s => s.status === 'booked' && s.employee === employeeProfile.name).sort((a,b) => (a.date+a.start).localeCompare(b.date+b.start));
+      week.innerHTML = weekDays.map(day => {
+        const key = staffingData.iso(day), dayShifts = shifts.filter(s => s.date === key);
+        return `<div class="employee-day ${key === staffingData.dateISO() ? 'today' : ''}"><div class="employee-day-title"><span>${staffingData.dateLabel(key,{weekday:'short'})}</span><small>${staffingData.dateLabel(key,{month:'short',day:'numeric'})}</small></div>${dayShifts.length ? dayShifts.map(s => `<div class="employee-shift"><strong>${staffingData.escapeHTML(s.role)} · ${fmtShiftTime(s.start)}–${fmtShiftTime(s.end)}</strong><small>${staffingData.escapeHTML(s.employee || s.provider)}<br>${staffingData.escapeHTML(s.facility)} · ${staffingData.escapeHTML(s.unit || '')}</small></div>`).join('') : '<div class="employee-empty">No shifts</div>'}</div>`;
+      }).join('');
+      const list = document.getElementById('employeeStaffingList');
+      list.innerHTML = shifts.length ? `<h2 style="font-size:12px;margin:2px 0 4px">Shift confirmations</h2>${shifts.map(s => {
+        const state = s.confirmation === 'confirmed' ? 'Confirmed' : s.confirmation === 'change-requested' ? 'Change requested' : 'Awaiting confirmation';
+        const controls = s.confirmation === 'confirmed' ? '<span class="shift-state">Confirmed</span>' : `<div class="shift-response"><button type="button" data-staff-action="confirm" data-id="${staffingData.escapeHTML(s.id)}">Confirm shift</button><button type="button" data-staff-action="request" data-id="${staffingData.escapeHTML(s.id)}">Request change</button></div>`;
+        return `<article class="employee-shift"><strong>${staffingData.escapeHTML(s.employee || s.provider)} · ${staffingData.escapeHTML(s.role)}</strong><small>${staffingData.dateLabel(s.date,{weekday:'long',month:'long',day:'numeric'})} · ${fmtShiftTime(s.start)}–${fmtShiftTime(s.end)}<br>${staffingData.escapeHTML(s.facility)} · ${staffingData.escapeHTML(s.unit || '')} · ${staffingData.escapeHTML(s.source || 'Internal team')}</small><span class="shift-state">${state}</span>${controls}</article>`;
+      }).join('')}` : '<div class="employee-empty">No booked shifts in this week for your profile.</div>';
+    }
+    document.getElementById('employeePrevWeek').addEventListener('click', () => { employeeStaffingWeekOffset--; renderEmployeeStaffing(); });
+    document.getElementById('employeeNextWeek').addEventListener('click', () => { employeeStaffingWeekOffset++; renderEmployeeStaffing(); });
+    document.addEventListener('click', e => {
+      const action = e.target.closest('[data-staff-action]');
+      if (!action) return;
+      const shifts = staffingData.load(), shift = shifts.find(s => s.id === action.dataset.id);
+      if (!shift) return;
+      shift.confirmation = action.dataset.staffAction === 'confirm' ? 'confirmed' : 'change-requested';
+      shift.employeeNote = action.dataset.staffAction === 'confirm' ? 'Employee confirmed the scheduled time.' : 'Employee requested a schedule review.';
+      shift.confirmedAt = action.dataset.staffAction === 'confirm' ? new Date().toISOString() : null;
+      staffingData.save(shifts);
+      renderEmployeeStaffing();
+      showToast(action.dataset.staffAction === 'confirm' ? 'Shift time confirmed. The staffing monitor is updated.' : 'Change request sent to the staffing monitor.');
+    });
+    window.addEventListener('staffing:updated', renderEmployeeStaffing);
+    window.addEventListener('storage', e => { if (e.key === staffingData.KEY) renderEmployeeStaffing(); });
+    applyEmployeeProfile();
+    renderEmployeeStaffing();
+  </script>
+</body>
+</html>
