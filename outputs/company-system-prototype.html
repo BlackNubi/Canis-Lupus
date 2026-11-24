@@ -117,7 +117,7 @@ function saveDemoState(){try{localStorage.setItem('actriv_admin_preview_v1',JSON
 let currentView='dashboard',toastTimer=null;
 const content=document.getElementById('content');
 const money=n=>'KES '+Number(n).toLocaleString('en-KE');
-const escapeText=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));
+const escapeText=s=>String(s??'').replace(/[&<>"']/g,c=>c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':c.charCodeAt(0)===34?'&quot;':'&#39;');
 const statusClass=s=>String(s).toLowerCase().replaceAll(' ','-');
 function badge(s){return `<span class="status ${statusClass(s)}">${s}</span>`}
 function pageHead(title,sub,action=''){return `<div class="page-head"><div><h1>${title}</h1><div class="subtitle">${sub}</div></div><div class="head-actions">${demoFlag}${action}</div></div>`}
