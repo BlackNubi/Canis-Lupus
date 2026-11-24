@@ -309,7 +309,7 @@
               <div class="clock-heading"><span class="clock-symbol"><svg><use href="#i-clock"/></svg></span><div><h2 id="clock-title">Time clock</h2><p>Keep track of your workday</p></div></div>
               <div class="clock-status-wrap"><span class="status-tag">Preview only</span><div class="clock-status" id="clockStatus" aria-live="polite">Not clocked in</div><div class="clock-detail" id="clockDetail">No time entry is active in this preview.</div></div>
             </div>
-            <div class="clock-actions"><div class="clock-note">Clock entries are local to this page. Nothing is submitted or saved.</div><div class="clock-buttons"><button class="btn" id="breakButton" data-action="breakToggle" hidden>Take break</button><button class="btn primary" id="clockInButton" data-action="clockIn">Clock in</button><button class="btn primary" id="clockOutButton" data-action="clockOut" hidden>Clock out</button></div></div>
+            <div class="clock-actions"><div class="clock-note">Clock entries are saved in this browser preview. Nothing is sent to payroll.</div><div class="clock-buttons"><button class="btn" id="breakButton" data-action="breakToggle" hidden>Take break</button><button class="btn primary" id="clockInButton" data-action="clockIn">Clock in</button><button class="btn primary" id="clockOutButton" data-action="clockOut" hidden>Clock out</button></div></div>
           </section>
 
           <h2 class="section-title">Your overview <span class="rule"></span></h2>
@@ -420,6 +420,83 @@
     let clockInAt = null;
     let breakStartedAt = null;
     let breakDurationMs = 0;
+
+    let lastClockEntry = null;
+    const employeeRequestsKey = 'actriv_employee_requests_v1';
+    const employeeTimeEntriesKey = 'actriv_employee_time_entries_v1';
+    const safeText = value => String(value ?? '').replace(/[&<>"']/g, c => c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c.charCodeAt(0) === 34 ? '&quot;' : '&#39;');
+    function readEmployeeRequests() {
+      try { const value = JSON.parse(localStorage.getItem(employeeRequestsKey) || '[]'); return Array.isArray(value) ? value : []; } catch (_) { return []; }
+    }
+    function readEmployeeTimeEntries() {
+      try { const value = JSON.parse(localStorage.getItem(employeeTimeEntriesKey) || '[]'); return Array.isArray(value) ? value : []; } catch (_) { return []; }
+    }
+    function saveEmployeeClock() {
+      try { localStorage.setItem('actriv_employee_clock_v1:' + employeeProfile.name, JSON.stringify({clockInAt:clockInAt ? new Date(clockInAt).toISOString() : null, breakStartedAt:breakStartedAt ? new Date(breakStartedAt).toISOString() : null, breakDurationMs, lastClockEntry})); } catch (_) {}
+    }
+    function restoreEmployeeClock() {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem('actriv_employee_clock_v1:' + employeeProfile.name) || '{}') || {}; } catch (_) {}
+      const parseDate = value => { if (!value) return null; const date = new Date(value); return Number.isNaN(date.getTime()) ? null : date; };
+      clockInAt = parseDate(saved.clockInAt);
+      breakStartedAt = parseDate(saved.breakStartedAt);
+      breakDurationMs = Math.max(0, Number(saved.breakDurationMs) || 0);
+      lastClockEntry = saved.lastClockEntry || readEmployeeTimeEntries().find(row => row.employee === employeeProfile.name) || null;
+      const status = document.getElementById('clockStatus');
+      const detail = document.getElementById('clockDetail');
+      const inButton = document.getElementById('clockInButton');
+      const outButton = document.getElementById('clockOutButton');
+      const breakButton = document.getElementById('breakButton');
+      if (!clockInAt) {
+        status.textContent = 'Not clocked in';
+        detail.textContent = lastClockEntry ? `Last preview shift · ${lastClockEntry.workedMinutes} min worked · ${lastClockEntry.breakMinutes} min break` : 'No time entry is active in this preview.';
+        inButton.hidden = false; outButton.hidden = true; breakButton.hidden = true;
+        return;
+      }
+      inButton.hidden = true; outButton.hidden = false; breakButton.hidden = false;
+      if (breakStartedAt) {
+        status.textContent = 'On break · ' + breakStartedAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+        detail.textContent = 'Break in progress · end it when you return';
+        breakButton.textContent = 'End break';
+      } else {
+        status.textContent = 'Clocked in · ' + clockInAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+        detail.textContent = 'Preview session active · ' + clockInAt.toLocaleDateString([], {month:'short',day:'numeric'});
+        breakButton.textContent = 'Take break';
+      }
+    }
+    function saveEmployeeRequest(kind, values) {
+      const request = {id:'request-' + Date.now() + '-' + Math.random().toString(36).slice(2,8), employee:employeeProfile.name, kind, values, submittedAt:new Date().toISOString(), status:'Pending'};
+      const rows = readEmployeeRequests();
+      rows.unshift(request);
+      try { localStorage.setItem(employeeRequestsKey, JSON.stringify(rows)); } catch (_) { return null; }
+      window.dispatchEvent(new CustomEvent('workforce:requests-updated'));
+      return request;
+    }
+    function renderEmployeeRequests() {
+      const config = [
+        ['timeoff','timeoff','Leave requests'],
+        ['expense','expenses','Expense submissions'],
+        ['ticket','it','IT support requests']
+      ];
+      const all = readEmployeeRequests().filter(row => row.employee === employeeProfile.name);
+      for (const [kind,page,title] of config) {
+        const grid = document.querySelector(`#page-${page} .page-grid`);
+        if (!grid) continue;
+        let card = document.getElementById(`employee-${kind}-requests`);
+        if (!card) {
+          card = document.createElement('article');
+          card.id = `employee-${kind}-requests`;
+          card.className = 'panel page-card';
+          grid.appendChild(card);
+        }
+        const rows = all.filter(row => row.kind === kind);
+        card.innerHTML = `<h2>${title}</h2><p class="subtle">Saved in this browser preview. Statuses are local and do not notify a reviewer.</p>${rows.length ? rows.map(row => {
+          const summary = row.summary || row.values?.summary || 'Request';
+          const date = row.submittedAt ? new Date(row.submittedAt).toLocaleDateString() : '';
+          return `<div class="policy-row"><div><strong>${safeText(summary)}</strong><small>${safeText(date)} · ${safeText(row.status)}</small></div><span class="status-tag">${safeText(row.status)}</span></div>`;
+        }).join('') : '<div class="empty-state"><div><strong>No saved preview requests</strong><p>Requests you submit from this page will appear here.</p></div></div>'}`;
+      }
+    }
     let toastTimer;
     function showToast(message) { toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 3000); }
     function go(page) {
@@ -430,6 +507,7 @@
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('searchResults').classList.remove('open');
       if (page === 'staffing') renderEmployeeStaffing();
+      renderEmployeeRequests();
       window.scrollTo({top:0,behavior:'smooth'});
     }
     nav.addEventListener('click', e => { const item = e.target.closest('[data-page]'); if (item) go(item.dataset.page); });
@@ -480,7 +558,25 @@
         ? `<div class="form-grid"><div class="field"><label for="expenseType">Category</label><select id="expenseType"><option>Travel</option><option>Meals</option><option>Supplies</option><option>Other</option></select></div><div class="field"><label for="amount">Amount</label><input id="amount" type="number" min="0" step="0.01" placeholder="0.00"></div><div class="field full"><label for="expenseNote">Description</label><textarea id="expenseNote" placeholder="What was this expense for?"></textarea></div></div><div class="dialog-note">This is a local preview. No expense record or reimbursement request will be created.</div>`
         : `<div class="form-grid"><div class="field full"><label for="issue">What do you need help with?</label><select id="issue"><option>Device issue</option><option>App access</option><option>Software problem</option><option>Other</option></select></div><div class="field full"><label for="issueNote">Describe the issue</label><textarea id="issueNote" placeholder="Add a short description"></textarea></div></div><div class="dialog-note">This is a local preview. No IT ticket will be submitted or sent.</div>`;
       openDialog(`<form id="previewForm"><div class="dialog-head"><div><h2 id="dialogTitle">${title}</h2><p>Complete the example form to preview the workflow.</p></div><button type="button" class="close" aria-label="Close dialog" data-action="close">×</button></div>${content}<div class="dialog-actions"><button type="button" class="btn" data-action="close">Cancel</button><button type="submit" class="btn primary">Preview submit</button></div></form>`);
-      document.getElementById('previewForm').addEventListener('submit', e => { e.preventDefault(); closeDialog(); showToast('Preview complete — nothing was sent or saved.'); });
+      document.getElementById('previewForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const values = Object.fromEntries([...e.currentTarget.elements].filter(el => el.id).map(el => [el.id, el.value.trim()]));
+        const requestKind = isPto ? 'timeoff' : kind === 'expense' ? 'expense' : 'ticket';
+        const summary = requestKind === 'timeoff'
+          ? `${values.leaveType} · ${values.startDate}–${values.endDate}`
+          : requestKind === 'expense'
+          ? `${values.expenseType} · KES ${values.amount}`
+          : `${values.issue} · ${values.issueNote || 'Support request'}`;
+        const request = saveEmployeeRequest(requestKind, { ...values, summary });
+        if (!request) { showToast('Could not save this preview request in browser storage.'); return; }
+        request.summary = summary;
+        const rows = readEmployeeRequests().map(row => row.id === request.id ? request : row);
+        try { localStorage.setItem(employeeRequestsKey, JSON.stringify(rows)); } catch (_) {}
+        closeDialog();
+        renderEmployeeRequests();
+        go(requestKind === 'timeoff' ? 'timeoff' : requestKind === 'expense' ? 'expenses' : 'it');
+        showToast('Request saved in this browser preview. No notification was sent.');
+      });
     }
     function runAction(action) {
       if (action === 'close') { closeDialog(); return; }
@@ -496,6 +592,7 @@
         document.getElementById('clockOutButton').hidden = false;
         document.getElementById('breakButton').hidden = false;
         document.getElementById('breakButton').textContent = 'Take break';
+        saveEmployeeClock();
         return;
       }
       if (action === 'breakToggle') {
@@ -506,6 +603,7 @@
           document.getElementById('clockStatus').textContent = 'On break · ' + breakStartedAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
           document.getElementById('clockDetail').textContent = 'Break in progress · end it when you return';
           breakButton.textContent = 'End break';
+          saveEmployeeClock();
         } else {
           const resumedAt = new Date();
           breakDurationMs += resumedAt - breakStartedAt;
@@ -514,6 +612,7 @@
           document.getElementById('clockStatus').textContent = 'Clocked in · resumed ' + resumedAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
           document.getElementById('clockDetail').textContent = `Break time so far · ${breakMinutes} minute${breakMinutes === 1 ? '' : 's'}`;
           breakButton.textContent = 'Take break';
+          saveEmployeeClock();
         }
         return;
       }
@@ -527,11 +626,17 @@
         const breakMinutes = Math.max(0, Math.round(breakDurationMs / 60000));
         const workedMinutes = Math.max(0, Math.round((endedAt - clockInAt - breakDurationMs) / 60000));
         document.getElementById('clockStatus').textContent = 'Clocked out · ' + endedAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-        document.getElementById('clockDetail').textContent = `Preview · ${workedMinutes} min worked · ${breakMinutes} min break · resets when you reload`;
+        document.getElementById('clockDetail').textContent = `Preview · ${workedMinutes} min worked · ${breakMinutes} min break · saved in this browser`;
+        const entry = {id:'time-' + Date.now(), employee:employeeProfile.name, startedAt:clockInAt.toISOString(), endedAt:endedAt.toISOString(), workedMinutes, breakMinutes, status:'Draft'};
+        const timeRows = readEmployeeTimeEntries();
+        timeRows.unshift(entry);
+        try { localStorage.setItem(employeeTimeEntriesKey, JSON.stringify(timeRows.slice(0,200))); } catch (_) {}
+        lastClockEntry = entry;
         clockInAt = null;
         document.getElementById('clockInButton').hidden = false;
         document.getElementById('clockOutButton').hidden = true;
         document.getElementById('breakButton').hidden = true;
+        saveEmployeeClock();
         return;
       }
       if (action === 'timeOff') { go('timeoff'); return; }
@@ -639,8 +744,10 @@
       showToast(action.dataset.staffAction === 'confirm' ? 'Shift time confirmed. The staffing monitor is updated.' : 'Change request sent to the staffing monitor.');
     });
     window.addEventListener('staffing:updated', renderEmployeeStaffing);
-    window.addEventListener('storage', e => { if (e.key === staffingData.KEY) renderEmployeeStaffing(); });
+    window.addEventListener('storage', e => { if (e.key === staffingData.KEY) renderEmployeeStaffing(); if (e.key === employeeRequestsKey) renderEmployeeRequests(); if (e.key === employeeTimeEntriesKey) restoreEmployeeClock(); });
     applyEmployeeProfile();
+    restoreEmployeeClock();
+    renderEmployeeRequests();
     renderEmployeeStaffing();
   </script>
 </body>
